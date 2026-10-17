@@ -1,0 +1,72 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{# Liste des projets (UC-2, 06_FRONTEND_GUIDE.md §8.4) — thème « console » sombre. #}
+
+{% block title %}{% translate "Projets" %}{% endblock %}
+
+{% block breadcrumb %}
+  <span class="font-medium text-g-text">{% translate "Projets" %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <h1 class="text-2xl font-medium text-g-text">{% translate "Projets" %}</h1>
+    {% if developer_status != 'suspended' %}
+      {% translate "Nouveau projet" as new_project_label %}
+      {% include "components/button.html" with label=new_project_label href=create_url variant="primary" %}
+    {% endif %}
+  </div>
+  <form method="get" class="mb-4 flex flex-wrap gap-2">
+    <label for="q" class="sr-only">{% translate "Rechercher un projet par nom" %}</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="{% translate 'Rechercher par nom…' %}"
+           class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text placeholder:text-g-faint focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40 sm:max-w-xs">
+    <button type="submit" class="rounded-md border border-g-600 px-3 py-2 text-sm font-medium text-g-blue hover:bg-g-800">{% translate "Filtrer" %}</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+  {% if projects %}
+    <div class="overflow-x-auto rounded-lg border border-g-700 bg-g-850">
+      <table class="min-w-full text-sm">
+        <caption class="sr-only">{% translate "Liste de vos projets" %}</caption>
+        <thead class="bg-g-800/60 text-left text-xs uppercase tracking-wide text-g-muted">
+          <tr>
+            <th scope="col" class="px-4 py-3">{% translate "Nom" %}</th>
+            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Site" %}</th>
+            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Sessions" %}</th>
+            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Créé le" %}</th>
+            <th scope="col" class="px-4 py-3 text-right">{% translate "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in projects %}
+            <tr class="border-t border-g-700 hover:bg-g-800">
+              <td class="px-4 py-3">
+                <a href="{% url 'dashboard:project-detail' project.id %}" class="font-medium text-g-blue hover:text-g-blue/80">{{ project.name }}</a>
+              </td>
+              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">
+                <span title="{{ project.site_url }}">{{ project.site_url|truncatechars:40 }}</span>
+              </td>
+              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">{{ project.sessions_count }}</td>
+              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">{{ project.created_at|date:"d/m/Y" }}</td>
+              <td class="px-4 py-3 text-right">
+                <a href="{% url 'dashboard:project-detail' project.id %}" class="text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Ouvrir" %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "components/pagination.html" with page_obj=page_obj %}
+  {% else %}
+    {% if q %}
+      {% translate "Aucun projet ne correspond à cette recherche." as no_match_title %}
+      {% include "components/empty_state.html" with title=no_match_title %}
+    {% else %}
+      {% translate "Aucun projet pour l'instant" as no_project_title %}
+      {% translate "Créez votre premier projet pour générer vos clés API." as no_project_desc %}
+      {% translate "Créer mon premier projet" as create_first_label %}
+      {% include "components/empty_state.html" with title=no_project_title description=no_project_desc cta_label=create_first_label cta_url=create_url %}
+    {% endif %}
+  {% endif %}
+{% endblock %}

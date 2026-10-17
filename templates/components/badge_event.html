@@ -1,0 +1,15 @@
+{% load i18n %}
+{% comment %} Badge d'un événement : libellé + catégorie colorée issus du presenter (06 §9).
+   Thème sombre : une teinte par catégorie, fond translucide + anneau intérieur pour rester
+   lisible sur le fond de carte sombre. {% endcomment %}
+{% if category == 'browser' %}
+  <span class="inline-flex items-center rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-300 ring-1 ring-inset ring-blue-500/30">{% firstof label event_type %}</span>
+{% elif category == 'vision' %}
+  <span class="inline-flex items-center rounded-full bg-purple-500/15 px-2.5 py-0.5 text-xs font-medium text-purple-300 ring-1 ring-inset ring-purple-500/30">{% firstof label event_type %}</span>
+{% elif category == 'audio' %}
+  <span class="inline-flex items-center rounded-full bg-teal-500/15 px-2.5 py-0.5 text-xs font-medium text-teal-300 ring-1 ring-inset ring-teal-500/30">{% firstof label event_type %}</span>
+{% elif category == 'extension' %}
+  <span class="inline-flex items-center rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-medium text-indigo-300 ring-1 ring-inset ring-indigo-500/30">{% firstof label event_type %}</span>
+{% else %}
+  <span class="inline-flex items-center rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-300 ring-1 ring-inset ring-red-500/30">{% firstof label event_type %}</span>
+{% endif %}

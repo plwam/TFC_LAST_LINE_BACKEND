@@ -1,0 +1,13 @@
+{% load allauth %}
+{# Panneau (bloc de gestion compte) — 06_FRONTEND_GUIDE.md §8.9. #}
+<section class="border-t border-g-800 pt-6 first:border-0 first:pt-0">
+    <h2 class="text-sm font-semibold text-g-text">{% slot title %}{% endslot %}</h2>
+    <div class="mt-2 text-sm text-g-muted">
+        {% slot body %}{% endslot %}
+    </div>
+    {% if slots.actions %}
+        <ul class="mt-3 space-y-1">
+            {% for action in slots.actions %}<li>{{ action }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+</section>

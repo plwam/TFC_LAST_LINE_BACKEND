@@ -1,0 +1,12 @@
+{% load i18n %}
+{# État vide — jamais un tableau vide sans explication (06_FRONTEND_GUIDE.md §4.2). #}
+<div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-g-600 bg-g-850 px-6 py-12 text-center">
+  <svg class="h-10 w-10 text-g-faint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+  </svg>
+  <h3 class="mt-4 text-sm font-semibold text-g-text">{{ title }}</h3>
+  {% if description %}<p class="mt-1 text-sm text-g-muted">{{ description }}</p>{% endif %}
+  {% if cta_label and cta_url %}
+    <div class="mt-5">{% include "components/button.html" with label=cta_label href=cta_url variant="primary" %}</div>
+  {% endif %}
+</div>

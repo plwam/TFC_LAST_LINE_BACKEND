@@ -1,0 +1,70 @@
+{% load i18n static %}<!DOCTYPE html>
+<html lang="fr" class="h-full bg-g-950">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% translate "Tableau de bord" %}{% endblock %} — ExamSDK</title>
+
+  {# Jeton CSRF lu par dashboard.js pour les appels fetch POST (06_FRONTEND_GUIDE.md §10). #}
+  <meta name="csrf-token" content="{{ csrf_token }}">
+
+  {% comment %} Tailwind Play CDN — version ÉPINGLÉE. Une mise à jour silencieuse du CDN changerait
+     l'apparence de toute l'application sans qu'aucun commit ne l'explique (06 §2.3). {% endcomment %}
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+
+  {# Configuration du thème : DOIT venir APRÈS le script CDN, sinon `tailwind` n'existe pas. #}
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Conservée pour compatibilité d'éventuelles classes historiques ; le thème de
+            // référence est désormais la palette « console » sombre ci-dessous, appliquée
+            // PARTOUT (landing, connexion, tableau de bord) — voir SETUP.md §6.
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 600: '#4f46e5', 700: '#4338ca' },
+            // Palette « console » sombre, thème de référence de TOUTE l'application (cf. 06 §6
+            // et décision consignée dans SETUP.md §6). Un seul endroit à modifier pour re-thématiser.
+            //   950/900/850/800 : fonds (sidebar, page, carte, survol)
+            //   700/600/500     : bordures + texte discret
+            //   text/muted/faint: texte principal / secondaire / tertiaire
+            //   blue/accent     : liens, état actif, boutons pleins
+            g: {
+              950: '#1b1c1e',
+              900: '#202124',
+              850: '#292a2d',
+              800: '#303134',
+              700: '#3c4043',
+              600: '#5f6368',
+              500: '#80868b',
+              text: '#e8eaed',
+              muted: '#9aa0a6',
+              faint: '#80868b',
+              blue: '#8ab4f8',
+              accent: '#1a73e8',
+              accentHover: '#1765cc',
+            },
+          },
+          fontFamily: {
+            // Pile système : aucune police chargée depuis un tiers.
+            sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  {% comment %} Coloration syntaxique des blocs de code (« façon éditeur », demande utilisateur).
+     Elle est faite CÔTÉ SERVEUR par Pygments (filtre `highlight`, apps/core/templatetags/
+     code_extras.py), avec des styles EN LIGNE : aucun script ni feuille de style tiers à
+     charger, le rendu en couleurs est donc garanti partout et hors-ligne. {% endcomment %}
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-full bg-g-950 font-sans text-g-text antialiased" data-csrf="{{ csrf_token }}">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-g-accent focus:px-3 focus:py-2 focus:text-white">{% translate "Aller au contenu principal" %}</a>
+  {% block body %}{% endblock %}
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

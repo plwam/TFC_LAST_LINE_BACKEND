@@ -1,0 +1,5 @@
+{% load allauth %}
+{# Alerte d'erreur allauth (identifiants invalides, email déjà utilisé…). #}
+<div class="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">
+    {% slot message %}{% endslot %}
+</div>

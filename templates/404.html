@@ -1,0 +1,24 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="fr" class="h-full bg-g-950">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% translate "Page introuvable" %} — ExamSDK</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  {% comment %} Palette minimale : ces pages autonomes n'héritent pas de base.html (06 §8.10). {% endcomment %}
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      g: { 950:'#1b1c1e', 900:'#202124', 850:'#292a2d', 800:'#303134', 700:'#3c4043', 600:'#5f6368', 500:'#80868b',
+           text:'#e8eaed', muted:'#9aa0a6', faint:'#80868b', blue:'#8ab4f8', accent:'#1a73e8', accentHover:'#1765cc' }
+    } } } };
+  </script>
+</head>
+<body class="h-full font-sans text-g-text antialiased">
+  <main class="mx-auto flex min-h-full max-w-md flex-col items-center justify-center px-4 text-center">
+    <p class="text-6xl font-bold text-g-blue">404</p>
+    <h1 class="mt-4 text-xl font-semibold text-white">{% translate "Page introuvable." %}</h1>
+    <p class="mt-2 text-sm text-g-muted">{% translate "La page que vous cherchez n'existe pas ou a été déplacée." %}</p>
+    <a href="/" class="mt-6 inline-flex items-center rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-g-accentHover">{% translate "Retour à l'accueil" %}</a>
+  </main>
+</body>
+</html>

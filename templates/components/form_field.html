@@ -1,0 +1,17 @@
+{% load i18n %}
+{% comment %} Champ de formulaire accessible (06_FRONTEND_GUIDE.md §4.2).
+   - <label for> toujours visible ;
+   - aide et erreurs reliées (ids) ;
+   - `aria-invalid`/`aria-describedby` sont posés sur le widget par DarkFormMixin. {% endcomment %}
+<div>
+  <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-g-muted">
+    {{ field.label }}{% if field.field.required %} <span class="text-red-300" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <div class="mt-1">{{ field }}</div>
+  {% if field.help_text %}
+    <p id="{{ field.id_for_label }}-help" class="mt-1 text-xs text-g-faint">{{ field.help_text }}</p>
+  {% endif %}
+  {% for error in field.errors %}
+    <p id="{{ field.id_for_label }}-error" class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>
+  {% endfor %}
+</div>

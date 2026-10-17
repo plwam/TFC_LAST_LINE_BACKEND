@@ -1,0 +1,55 @@
+{% load i18n %}
+{% comment %} Onglet « Clés API » (UC-3, 06_FRONTEND_GUIDE.md §8.6.2) — thème sombre.
+   La clé secrète n'apparaît JAMAIS dans le HTML initial : seule sa version masquée est rendue. {% endcomment %}
+<div class="max-w-2xl space-y-6">
+  <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Clé publique" %}</h2>
+    <p class="mt-1 text-xs text-g-muted">{% translate "À placer dans le code de votre page d'examen (publicKey). Elle n'est pas confidentielle." %}</p>
+    <div class="mt-3">
+      {% include "components/copy_field.html" with id="public-key" value=project.public_key %}
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Clé secrète" %}</h2>
+    <p class="mt-1 text-xs text-g-muted">{% translate "À utiliser uniquement sur le serveur de votre plateforme pour signer les jetons de session. Ne jamais l'inclure dans du code exécuté dans un navigateur." %}</p>
+    <div class="mt-3">
+      {% if developer_status != 'suspended' %}
+        {% url 'dashboard:project-reveal-secret' project.id as reveal_url %}
+        {% include "components/secret_field.html" with masked=project.masked_secret reveal_url=reveal_url %}
+      {% else %}
+        {% include "components/secret_field.html" with masked=project.masked_secret %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if developer_status != 'suspended' %}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+      <h2 class="text-sm font-medium text-g-text">{% translate "Régénérer la clé secrète" %}</h2>
+      <p class="mt-1 text-xs text-g-muted">{% translate "L'ancienne clé sera immédiatement invalidée." %}</p>
+      <div class="mt-3">
+        <button type="button" data-dialog-open="regenerate-dialog" class="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/20">{% translate "Régénérer" %}</button>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% if developer_status != 'suspended' %}
+  {# Dialogue de confirmation avant affichage de la clé (données sensibles à l'écran). #}
+  <dialog id="reveal-secret-dialog" class="w-full max-w-md rounded-lg border border-g-700 bg-g-850 p-0 text-g-text backdrop:bg-black/60">
+    <div class="p-6">
+      <h2 class="text-lg font-semibold text-g-text">{% translate "Révéler la clé secrète" %}</h2>
+      <p class="mt-2 text-sm text-g-muted">{% translate "La clé va s'afficher à l'écran. Assurez-vous que personne ne regarde." %}</p>
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" data-dialog-close autofocus class="rounded-md border border-g-600 px-4 py-2 text-sm font-medium text-g-blue hover:bg-g-800">{% translate "Annuler" %}</button>
+        <button type="button" data-secret-confirm class="rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover">{% translate "Afficher" %}</button>
+      </div>
+    </div>
+  </dialog>
+
+  {% translate "Régénérer la clé secrète" as regen_title %}
+  {% translate "L'ancienne clé secrète sera immédiatement invalidée : les sessions signées avec elle cesseront d'être acceptées. Mettez à jour votre serveur juste après." as regen_msg %}
+  {% translate "Régénérer" as regen_label %}
+  {% url 'dashboard:project-regenerate-secret' project.id as regen_action %}
+  {% include "components/confirm_dialog.html" with id="regenerate-dialog" title=regen_title message=regen_msg confirm_label=regen_label form_action=regen_action confirm_class="danger" %}
+{% endif %}

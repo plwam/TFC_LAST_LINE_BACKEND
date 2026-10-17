@@ -1,0 +1,21 @@
+{% load i18n dashboard_extras %}
+{# Pagination serveur — conserve TOUS les paramètres GET (filtres) dans les liens (06 §4.2). #}
+{% if page_obj.paginator.num_pages > 1 %}
+  <nav class="flex flex-wrap items-center justify-between gap-2 border-t border-g-700 px-2 py-3 text-sm" aria-label="{% translate 'Pagination' %}">
+    <div>
+      {% if page_obj.has_previous %}
+        <a href="?{% querystring page=page_obj.previous_page_number %}" class="rounded-md border border-g-600 px-3 py-1.5 font-medium text-g-blue hover:bg-g-800">{% translate "Précédent" %}</a>
+      {% else %}
+        <span class="rounded-md border border-g-700 px-3 py-1.5 text-g-faint">{% translate "Précédent" %}</span>
+      {% endif %}
+    </div>
+    <p class="text-g-muted">{% blocktranslate with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} sur {{ total }}{% endblocktranslate %}</p>
+    <div>
+      {% if page_obj.has_next %}
+        <a href="?{% querystring page=page_obj.next_page_number %}" class="rounded-md border border-g-600 px-3 py-1.5 font-medium text-g-blue hover:bg-g-800">{% translate "Suivant" %}</a>
+      {% else %}
+        <span class="rounded-md border border-g-700 px-3 py-1.5 text-g-faint">{% translate "Suivant" %}</span>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}

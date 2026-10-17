@@ -1,0 +1,28 @@
+{% load i18n %}
+{% comment %} Alerte contextuelle (06_FRONTEND_GUIDE.md §4.2).
+   role="alert" pour les erreurs/avertissements (interruption d'annonce), role="status" sinon.
+   `dismissible` (défaut vrai) affiche un bouton de fermeture si activé.
+   `theme` : « dark » (défaut, dashboard) ou « light » (pages publiques allauth qui incluent
+   aussi les messages). Deux thèmes car le même composant est partagé entre surfaces claire
+   et sombre. {% endcomment %}
+{% if theme == 'light' %}
+  {% if level == 'success' %}
+    {% with box="border-green-200 bg-green-50 text-green-800" close="text-green-700 hover:text-green-900" %}{% include "components/_alert_box.html" with box=box close=close role="status" %}{% endwith %}
+  {% elif level == 'error' %}
+    {% with box="border-red-200 bg-red-50 text-red-800" close="text-red-700 hover:text-red-900" %}{% include "components/_alert_box.html" with box=box close=close role="alert" %}{% endwith %}
+  {% elif level == 'warning' %}
+    {% with box="border-amber-200 bg-amber-50 text-amber-800" close="text-amber-700 hover:text-amber-900" %}{% include "components/_alert_box.html" with box=box close=close role="alert" %}{% endwith %}
+  {% else %}
+    {% with box="border-blue-200 bg-blue-50 text-blue-800" close="text-blue-700 hover:text-blue-900" %}{% include "components/_alert_box.html" with box=box close=close role="status" %}{% endwith %}
+  {% endif %}
+{% else %}
+  {% if level == 'success' %}
+    {% with box="border-green-500/30 bg-green-500/10 text-green-300" close="text-green-300 hover:text-green-200" %}{% include "components/_alert_box.html" with box=box close=close role="status" %}{% endwith %}
+  {% elif level == 'error' %}
+    {% with box="border-red-500/30 bg-red-500/10 text-red-300" close="text-red-300 hover:text-red-200" %}{% include "components/_alert_box.html" with box=box close=close role="alert" %}{% endwith %}
+  {% elif level == 'warning' %}
+    {% with box="border-amber-500/30 bg-amber-500/10 text-amber-300" close="text-amber-300 hover:text-amber-200" %}{% include "components/_alert_box.html" with box=box close=close role="alert" %}{% endwith %}
+  {% else %}
+    {% with box="border-blue-500/30 bg-blue-500/10 text-blue-300" close="text-blue-300 hover:text-blue-200" %}{% include "components/_alert_box.html" with box=box close=close role="status" %}{% endwith %}
+  {% endif %}
+{% endif %}

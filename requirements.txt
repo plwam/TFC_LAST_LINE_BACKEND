@@ -1,0 +1,46 @@
+# Dépendances backend — ExamSDK (cf. 01_BACKEND.md §2)
+# Versions volontairement bornées pour la reproductibilité du mémoire.
+# Note : django-allauth doit être >= 64 pour supporter Django 5.2 (l'ancienne 0.57
+# installée globalement sur la machine est incompatible). Voir SETUP.md.
+
+Django>=5.2,<5.3
+
+# API machine (HMAC) et API JWT développeur (future)
+djangorestframework>=3.15,<3.17
+djangorestframework-simplejwt>=5.3,<6
+drf-spectacular>=0.27,<0.31
+
+# Authentification humaine : email/mdp + Google + GitHub (01_BACKEND.md §4)
+django-allauth>=65,<66
+# Requis par les providers OAuth d'allauth (Google/GitHub).
+requests>=2.31
+
+# Configuration / env
+django-environ>=0.11
+
+# Chiffrement de la clé secrète au repos (01_BACKEND.md §12)
+cryptography>=42
+
+# Rate limiting par project_id (01_BACKEND.md §12)
+django-ratelimit>=4.1
+
+# Cache + broker Celery (score de risque, emails)
+celery>=5.3,<6
+redis>=5.0
+django-redis>=5.4
+# Stockage des résultats de tâches Celery en base (consultables depuis l'admin).
+django-celery-results>=2.5
+
+# Fichiers statiques (production)
+whitenoise>=6.6
+
+# Driver MySQL pur-Python (production). Évite la compilation C de mysqlclient sous Windows.
+PyMySQL>=1.1
+
+# Serveur WSGI de production
+gunicorn>=23
+
+# --- Développement / tests ---
+pytest>=8
+pytest-django>=4.8
+pytest-factoryboy>=2.7

@@ -1,0 +1,19 @@
+{% load i18n %}
+{% comment %} Bouton réutilisable (06_FRONTEND_GUIDE.md §4.2).
+   Paramètres : label, variant (primary|secondary|danger), href OU type, disabled.
+   Si `href` est fourni → <a>, sinon <button>. Toutes les classes sont écrites en entier
+   (règle du §2.2 : jamais de concaténation de classes Tailwind).
+   Thème sombre « console » : primaire = bleu plein, secondaire = contour bleu, danger = rouge. {% endcomment %}
+{% if variant == 'danger' %}
+  {% with base="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-g-900" %}
+    {% if href %}<a href="{{ href }}" class="{{ base }}">{{ label }}</a>{% else %}<button type="{{ type|default:'submit' }}" class="{{ base }}" {% if disabled %}disabled{% endif %}>{{ label }}</button>{% endif %}
+  {% endwith %}
+{% elif variant == 'secondary' %}
+  {% with base="inline-flex items-center justify-center rounded-md border border-g-600 bg-transparent px-4 py-2 text-sm font-medium text-g-blue hover:bg-g-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue focus-visible:ring-offset-2 focus-visible:ring-offset-g-900" %}
+    {% if href %}<a href="{{ href }}" class="{{ base }}">{{ label }}</a>{% else %}<button type="{{ type|default:'submit' }}" class="{{ base }}" {% if disabled %}disabled{% endif %}>{{ label }}</button>{% endif %}
+  {% endwith %}
+{% else %}
+  {% with base="inline-flex items-center justify-center rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover focus:outline-none focus-visible:ring-2 focus-visible:ring-g-accent focus-visible:ring-offset-2 focus-visible:ring-offset-g-900" %}
+    {% if href %}<a href="{{ href }}" class="{{ base }}">{{ label }}</a>{% else %}<button type="{{ type|default:'submit' }}" class="{{ base }}" {% if disabled %}disabled{% endif %}>{{ label }}</button>{% endif %}
+  {% endwith %}
+{% endif %}

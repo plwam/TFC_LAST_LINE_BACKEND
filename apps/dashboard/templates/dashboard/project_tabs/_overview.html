@@ -1,0 +1,29 @@
+{% load i18n %}
+{# Onglet « Vue d'ensemble » (06_FRONTEND_GUIDE.md §8.6.1) — thème sombre. #}
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="rounded-lg border border-g-700 bg-g-850 p-6 lg:col-span-2">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Informations" %}</h2>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div><dt class="text-g-muted">{% translate "Nom" %}</dt><dd class="font-medium text-g-text">{{ project.name }}</dd></div>
+      <div><dt class="text-g-muted">{% translate "Description" %}</dt><dd class="text-g-text">{{ project.description|default:"—" }}</dd></div>
+      <div><dt class="text-g-muted">{% translate "Adresse du site" %}</dt><dd class="font-mono text-g-text break-all">{{ project.site_url }}</dd></div>
+      <div><dt class="text-g-muted">{% translate "Créé le" %}</dt><dd class="text-g-text">{{ project.created_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></dd></div>
+      <div><dt class="text-g-muted">{% translate "Statut du compte" %}</dt><dd class="text-g-text">{{ developer_status }}</dd></div>
+    </dl>
+  </div>
+  <div class="space-y-4">
+    <div class="rounded-lg border border-g-700 bg-g-850 p-5">
+      <p class="text-sm text-g-muted">{% translate "Sessions totales" %}</p>
+      <p class="mt-1 text-3xl font-medium text-g-text">{{ sessions_total }}</p>
+    </div>
+    <div class="rounded-lg border border-g-700 bg-g-850 p-5">
+      <p class="text-sm text-g-muted">{% translate "Sessions actives" %}</p>
+      <p class="mt-1 text-3xl font-medium text-g-text">{{ sessions_active }}</p>
+    </div>
+    <div class="rounded-lg border border-g-700 bg-g-850 p-5">
+      <p class="text-sm text-g-muted">{% translate "Événements (30 j)" %}</p>
+      <p class="mt-1 text-3xl font-medium text-g-text">{{ events_30d }}</p>
+    </div>
+    <a href="?tab=sessions" class="block text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Voir les sessions" %} ›</a>
+  </div>
+</div>

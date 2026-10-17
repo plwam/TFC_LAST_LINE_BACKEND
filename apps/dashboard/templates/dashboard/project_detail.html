@@ -1,0 +1,57 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{% comment %} Détail d'un projet à onglets (06_FRONTEND_GUIDE.md §8.6).
+   Les onglets sont des liens GET `?tab=` : fonctionne sans JavaScript et l'URL est partageable.
+   (Une copie de ces onglets figure aussi dans la sidebar de la coquille, cf. base_dashboard.) {% endcomment %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1">›</span>
+  <span class="font-medium text-g-text">{{ project.name }}</span>
+{% endblock %}
+
+{% block page_header %}
+  <div class="mb-4 flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0">
+      <h1 class="text-2xl font-medium text-g-text break-words">{{ project.name }}</h1>
+      <p class="mt-1 text-sm text-g-muted break-all" title="{{ project.site_url }}">{{ project.site_url }}</p>
+    </div>
+    {% if developer_status != 'suspended' %}
+      <div class="flex flex-wrap items-center gap-2">
+        {% translate "Modifier" as edit_label %}
+        {% translate "Supprimer" as delete_label %}
+        {% include "components/button.html" with label=edit_label href=edit_url variant="secondary" %}
+        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" %}
+      </div>
+    {% endif %}
+  </div>
+
+  {# --- Barre d'onglets --- #}
+  <nav class="border-b border-g-700" aria-label="{% translate 'Sections du projet' %}">
+    <ul class="flex gap-1 overflow-x-auto text-sm">
+      <li><a href="?tab=overview" {% if tab == 'overview' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Vue d'ensemble" %}</a></li>
+      <li><a href="?tab=keys" {% if tab == 'keys' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Clés API" %}</a></li>
+      <li><a href="?tab=sessions" {% if tab == 'sessions' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Sessions" %}</a></li>
+      <li><a href="?tab=integration" {% if tab == 'integration' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Intégration" %}</a></li>
+      <li><a href="?tab=settings" {% if tab == 'settings' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Paramètres" %}</a></li>
+    </ul>
+  </nav>
+{% endblock %}
+
+{% block content %}
+  <div class="mt-6">
+    {% if tab == 'overview' %}
+      {% include "dashboard/project_tabs/_overview.html" %}
+    {% elif tab == 'keys' %}
+      {% include "dashboard/project_tabs/_keys.html" %}
+    {% elif tab == 'sessions' %}
+      {% include "dashboard/project_tabs/_sessions.html" %}
+    {% elif tab == 'integration' %}
+      {% include "dashboard/project_tabs/_integration.html" %}
+    {% elif tab == 'settings' %}
+      {% include "dashboard/project_tabs/_settings.html" %}
+    {% endif %}
+  </div>
+{% endblock %}

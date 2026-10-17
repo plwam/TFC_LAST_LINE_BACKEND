@@ -1,0 +1,27 @@
+{% load i18n %}
+{% comment %} Fenêtre de confirmation — <dialog> HTML natif (06_FRONTEND_GUIDE.md §4.2).
+   Paramètres : id, title, message, confirm_label, form_action, confirm_class (variant).
+   Le focus initial va sur « Annuler » (action destructive = pas de validation accidentelle
+   par Entrée). L'ouverture est déclenchée par un élément portant data-dialog-open="<id>". {% endcomment %}
+<dialog id="{{ id }}" class="w-full max-w-md rounded-lg border border-g-700 bg-g-850 p-0 text-g-text backdrop:bg-black/60">
+  <form method="post" action="{{ form_action }}" class="p-6">
+    {% csrf_token %}
+    <h2 class="text-lg font-semibold text-g-text">{{ title }}</h2>
+    <p class="mt-2 text-sm text-g-muted">{{ message }}</p>
+    {% if show_confirm_field %}
+      <div class="mt-4">
+        <label for="{{ id }}-confirm" class="block text-sm font-medium text-g-muted">{{ confirm_hint }}</label>
+        <input id="{{ id }}-confirm" name="confirm" type="text" autocomplete="off"
+               class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+      </div>
+    {% endif %}
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" data-dialog-close class="rounded-md border border-g-600 px-4 py-2 text-sm font-medium text-g-blue hover:bg-g-800" autofocus>{% translate "Annuler" %}</button>
+      {% if confirm_class == 'danger' %}
+        <button type="submit" class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">{% if confirm_label %}{{ confirm_label }}{% else %}{% translate "Confirmer" %}{% endif %}</button>
+      {% else %}
+        <button type="submit" class="rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover">{% if confirm_label %}{{ confirm_label }}{% else %}{% translate "Confirmer" %}{% endif %}</button>
+      {% endif %}
+    </div>
+  </form>
+</dialog>

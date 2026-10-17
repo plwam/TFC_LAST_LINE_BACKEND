@@ -1,0 +1,8 @@
+{% load allauth %}
+{% comment %} Champs d'un formulaire allauth — on réutilise notre composant accessible (06 §4.2).
+   `attrs.form` est le formulaire ; on boucle sur ses champs visibles. {% endcomment %}
+<div class="space-y-4">
+    {% for field in attrs.form %}
+        {% include "components/form_field.html" with field=field %}
+    {% endfor %}
+</div>

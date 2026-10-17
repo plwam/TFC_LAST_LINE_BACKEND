@@ -1,0 +1,86 @@
+{% load i18n dashboard_extras %}
+{% comment %} Onglet « Sessions » (UC-6, BF-19, 06_FRONTEND_GUIDE.md §8.6.3) — thème sombre.
+   Liste filtrable et paginée des sessions du projet. La consultation de l'onglet et de chaque
+   session est journalisée dans AccessLog par le middleware (jamais à la main dans la vue). {% endcomment %}
+
+<form method="get" class="mb-4 grid gap-3 rounded-lg border border-g-700 bg-g-850 p-4 sm:grid-cols-2 lg:grid-cols-5">
+  <input type="hidden" name="tab" value="sessions">
+  <div>
+    <label for="exam_id" class="block text-xs font-medium text-g-muted">{% translate "Examen" %}</label>
+    <input id="exam_id" name="exam_id" type="text" value="{{ filters.exam_id }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+  </div>
+  <div>
+    <label for="student_id" class="block text-xs font-medium text-g-muted">{% translate "Étudiant" %}</label>
+    <input id="student_id" name="student_id" type="text" value="{{ filters.student_id }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+  </div>
+  <div>
+    <label for="status" class="block text-xs font-medium text-g-muted">{% translate "Statut" %}</label>
+    <select id="status" name="status" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+      <option value="">{% translate "Toutes" %}</option>
+      <option value="active" {% if filters.status == 'active' %}selected{% endif %}>{% translate "Active" %}</option>
+      <option value="closed" {% if filters.status == 'closed' %}selected{% endif %}>{% translate "Terminée" %}</option>
+      <option value="invalid" {% if filters.status == 'invalid' %}selected{% endif %}>{% translate "Invalide" %}</option>
+    </select>
+  </div>
+  <div>
+    <label for="date_from" class="block text-xs font-medium text-g-muted">{% translate "Du" %}</label>
+    <input id="date_from" name="date_from" type="date" value="{{ filters.date_from }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+  </div>
+  <div>
+    <label for="date_to" class="block text-xs font-medium text-g-muted">{% translate "Au" %}</label>
+    <input id="date_to" name="date_to" type="date" value="{{ filters.date_to }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+  </div>
+  <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
+    <button type="submit" class="rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover">{% translate "Filtrer" %}</button>
+    <a href="?tab=sessions" class="rounded-md px-4 py-2 text-sm font-medium text-g-muted hover:text-g-text">{% translate "Réinitialiser" %}</a>
+  </div>
+</form>
+
+{% if filter_exam_id %}
+  <p class="mb-2 text-sm text-g-muted">
+    {% blocktranslate count counter=sessions_count with exam=filter_exam_id %}{{ counter }} session pour l'examen {{ exam }}{% plural %}{{ counter }} sessions pour l'examen {{ exam }}{% endblocktranslate %}
+  </p>
+{% endif %}
+
+{% if sessions_page.object_list %}
+  <div class="overflow-x-auto rounded-lg border border-g-700 bg-g-850">
+    <table class="min-w-full text-sm">
+      <caption class="sr-only">{% translate "Sessions d'examen du projet" %}</caption>
+      <thead class="bg-g-800/60 text-left text-xs uppercase tracking-wide text-g-muted">
+        <tr>
+          <th scope="col" class="px-4 py-2"><a href="?{% querystring sort='exam_id' %}" class="hover:text-g-text">{% translate "Examen" %}</a></th>
+          <th scope="col" class="px-4 py-2"><a href="?{% querystring sort='student_id' %}" class="hover:text-g-text">{% translate "Étudiant" %}</a></th>
+          <th scope="col" class="px-4 py-2"><a href="?{% querystring sort='status' %}" class="hover:text-g-text">{% translate "Statut" %}</a></th>
+          <th scope="col" class="px-4 py-2"><a href="?{% querystring sort='-risk_score' %}" class="hover:text-g-text">{% translate "Risque" %}</a></th>
+          <th scope="col" class="hidden px-4 py-2 sm:table-cell"><a href="?{% querystring sort='-started_at' %}" class="hover:text-g-text">{% translate "Début" %}</a></th>
+          <th scope="col" class="px-4 py-2">{% translate "Durée" %}</th>
+          <th scope="col" class="px-4 py-2"><span class="sr-only">{% translate "Détail" %}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions_page.object_list %}
+          <tr class="border-t border-g-700 hover:bg-g-800">
+            <td class="px-4 py-2 font-medium text-g-text">{{ session.exam_id }}</td>
+            <td class="px-4 py-2 text-g-text">{{ session.student_id }}</td>
+            <td class="px-4 py-2">{% include "components/badge_status.html" with status=session.status %}</td>
+            <td class="px-4 py-2">{% include "components/badge_risk.html" with score=session.risk_score %}</td>
+            <td class="hidden px-4 py-2 text-g-muted sm:table-cell">{{ session.started_at|date:"d/m/Y H:i" }}</td>
+            <td class="px-4 py-2 text-g-muted">{{ session.duration_seconds|duration }}</td>
+            <td class="px-4 py-2 text-right">
+              <a href="{% url 'dashboard:session-detail' session.id %}" class="font-medium text-g-blue hover:text-g-blue/80">{% translate "Détail" %}</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "components/pagination.html" with page_obj=sessions_page %}
+{% elif filters.exam_id or filters.student_id or filters.status or filters.date_from or filters.date_to %}
+  {% translate "Aucune session ne correspond à ces critères" as no_match_title %}
+  {% translate "Élargissez ou réinitialisez les filtres." as no_match_desc %}
+  {% include "components/empty_state.html" with title=no_match_title description=no_match_desc %}
+{% else %}
+  {% translate "Aucune session pour l'instant" as no_session_title %}
+  {% translate "Les sessions d'examen apparaîtront ici dès que le SDK sera intégré et qu'un premier examen aura été lancé." as no_session_desc %}
+  {% include "components/empty_state.html" with title=no_session_title description=no_session_desc %}
+{% endif %}

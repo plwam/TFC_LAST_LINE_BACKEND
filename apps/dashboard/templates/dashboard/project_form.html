@@ -1,0 +1,38 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{# Formulaire projet — création et modification (UC-2, 06_FRONTEND_GUIDE.md §8.5). #}
+
+{% block title %}{% if project %}{% translate "Modifier le projet" %}{% else %}{% translate "Nouveau projet" %}{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1">›</span>
+  <span class="font-medium text-g-text">{% if project %}{{ project.name }}{% else %}{% translate "Nouveau" %}{% endif %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <h1 class="mb-6 text-2xl font-medium text-g-text">
+    {% if project %}{% blocktranslate with name=project.name %}Modifier « {{ name }} »{% endblocktranslate %}{% else %}{% translate "Nouveau projet" %}{% endif %}
+  </h1>
+{% endblock %}
+
+{% block content %}
+  <div class="max-w-2xl rounded-lg border border-g-700 bg-g-850 p-6">
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+      {% for field in form %}
+        {% include "components/form_field.html" with field=field %}
+      {% endfor %}
+      <div class="flex items-center gap-3 pt-2">
+        {% translate "Enregistrer" as save_label %}
+        {% translate "Annuler" as cancel_label %}
+        {% include "components/button.html" with label=save_label variant="primary" type="submit" %}
+        {% if project %}
+          {% include "components/button.html" with label=cancel_label href=project_detail_url variant="secondary" %}
+        {% else %}
+          {% include "components/button.html" with label=cancel_label href=project_list_url variant="secondary" %}
+        {% endif %}
+      </div>
+    </form>
+  </div>
+{% endblock %}

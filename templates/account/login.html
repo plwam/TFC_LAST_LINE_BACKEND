@@ -1,0 +1,61 @@
+{% extends "allauth/layouts/base.html" %}
+{% load i18n %}
+{% comment %} Page de connexion (06_FRONTEND_GUIDE.md §8.2, UC-1).
+
+   Surcharge du gabarit allauth : contenu en français, formulaire rendu directement (les classes
+   Tailwind sont posées sur les widgets via ACCOUNT_FORMS), et surtout un lien EXPLICITE vers la
+   création de compte. Un lien discret vers la réinitialisation du mot de passe est conservé.
+   Thème sombre « console » identique au reste de l'application. {% endcomment %}
+
+{% block head_title %}{% translate "Connexion" %}{% endblock %}
+
+{% block content %}
+  <h1 class="text-xl font-semibold text-g-text">{% translate "Connexion" %}</h1>
+  <p class="mt-1 text-sm text-g-muted">
+    {% translate "Pas encore de compte ?" %}
+    <a href="{{ signup_url }}" class="font-medium text-g-blue underline-offset-2 hover:text-white hover:underline">
+      {% translate "Créer un compte" %}
+    </a>
+  </p>
+
+  {% if form.non_field_errors %}
+    <div class="mt-4 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300" role="alert">
+      {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'account_login' %}" class="mt-6 space-y-4" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.field.widget.input_type == "checkbox" %}
+        <label class="flex items-center gap-2 text-sm text-g-muted">
+          {{ field }} <span>{{ field.label }}</span>
+        </label>
+      {% else %}
+        <div class="space-y-1">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-g-muted">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <p id="{{ field.auto_id }}-error" class="text-sm text-red-300">{{ field.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {{ redirect_field }}
+    <button type="submit" class="w-full rounded-md bg-g-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-g-accentHover">
+      {% translate "Se connecter" %}
+    </button>
+  </form>
+
+  <p class="mt-4 text-center text-sm">
+    <a href="{% url 'account_reset_password' %}" class="text-g-muted transition hover:text-g-text">
+      {% translate "Mot de passe oublié ?" %}
+    </a>
+  </p>
+
+  {% if SOCIALACCOUNT_ENABLED %}
+    <div class="mt-6 border-t border-g-800 pt-4">
+      {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+    </div>
+  {% endif %}
+{% endblock %}

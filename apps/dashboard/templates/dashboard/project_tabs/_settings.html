@@ -1,0 +1,26 @@
+{% load i18n %}
+{# Onglet « Paramètres » (06_FRONTEND_GUIDE.md §8.6.5) — thème sombre. #}
+<div class="max-w-2xl space-y-6">
+  <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Informations du projet" %}</h2>
+    <form method="post" action="{% url 'dashboard:project-edit' project.id %}" class="mt-4 space-y-5">
+      {% csrf_token %}
+      {% for field in settings_form %}
+        {% include "components/form_field.html" with field=field %}
+      {% endfor %}
+      {% translate "Enregistrer" as save_label %}
+      {% include "components/button.html" with label=save_label variant="primary" type="submit" %}
+    </form>
+  </div>
+
+  {% if developer_status != 'suspended' %}
+    <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-6">
+      <h2 class="text-sm font-medium text-red-300">{% translate "Zone de danger" %}</h2>
+      <p class="mt-2 text-sm text-red-200">{% translate "Archiver ce projet. Ses clés cesseront de fonctionner et il ne sera plus surveillé." %}</p>
+      <div class="mt-4">
+        {% translate "Supprimer ce projet" as delete_label %}
+        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" %}
+      </div>
+    </div>
+  {% endif %}
+</div>

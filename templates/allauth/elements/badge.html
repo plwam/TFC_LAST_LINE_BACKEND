@@ -1,0 +1,10 @@
+{% load allauth %}
+{% if "success" in attrs.tags %}
+    <strong class="inline-flex items-center rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs font-medium text-green-300">{% slot %}{% endslot %}</strong>
+{% elif "warning" in attrs.tags %}
+    <strong class="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300">{% slot %}{% endslot %}</strong>
+{% elif "danger" in attrs.tags or "error" in attrs.tags %}
+    <strong class="inline-flex items-center rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-300">{% slot %}{% endslot %}</strong>
+{% else %}
+    <strong class="inline-flex items-center rounded-full bg-g-800 px-2.5 py-0.5 text-xs font-medium text-g-muted">{% slot %}{% endslot %}</strong>
+{% endif %}

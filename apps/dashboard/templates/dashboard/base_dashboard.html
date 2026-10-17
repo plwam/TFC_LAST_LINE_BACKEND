@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% comment %} Coquille du tableau de bord connecté (06_FRONTEND_GUIDE.md §6).
+   Thème CLAIR remplacé par un thème SOMBRE « console » (décision utilisateur, consignée dans
+   SETUP.md §6). Deux colonnes ≥ lg ; sidebar groupée par sections sur le modèle des consoles
+   d'administration (PROJET / RESSOURCES / PARAMÈTRES) ; tiroir mobile géré par dashboard.js
+   (initSidebarToggle, qui agit sur la classe `hidden`).
+   Blocs exposés : title, breadcrumb, page_header, content, extra_js. {% endcomment %}
+
+{% block body %}
+<div class="min-h-screen bg-g-900 text-g-text lg:grid lg:grid-cols-[15rem_1fr]">
+
+  {# ----- Sidebar ----- #}
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-40 hidden w-60 overflow-y-auto border-r border-g-800 bg-g-950 lg:static lg:block"
+         aria-label="{% translate 'Navigation principale' %}">
+
+    {# Marque : logo téléversé depuis l'admin, sinon le nom du site (identité visuelle éditable). #}
+    <div class="flex h-16 items-center px-4">
+      <a href="{% url 'dashboard:home' %}" class="flex items-center gap-2 text-lg font-medium text-g-text">
+        {% if site_branding.logo %}
+          <img src="{{ site_branding.logo.url }}" alt="{{ site_branding.site_name }}" class="h-7 w-auto">
+        {% else %}
+          <span class="flex h-7 w-7 items-center justify-center rounded bg-g-accent text-sm font-semibold text-white">E</span>
+        {% endif %}
+        <span>{{ site_branding.site_name }}</span>
+      </a>
+    </div>
+
+    {% url 'dashboard:home' as home_url %}
+    <nav class="px-3 pb-6 pt-1">
+      <ul class="space-y-0.5 text-sm">
+        <li>
+          <a href="{{ home_url }}" {% if request.path == home_url %}aria-current="page" class="flex items-center gap-3 rounded-md bg-g-800 px-3 py-2 font-medium text-g-blue"{% else %}class="flex items-center gap-3 rounded-md px-3 py-2 text-g-muted hover:bg-g-800 hover:text-g-text"{% endif %}>
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5M5 9.75V21h14V9.75"/></svg>
+            {% translate "Accueil" %}
+          </a>
+        </li>
+      </ul>
+
+      {# Section PROJET #}
+      <p class="mt-5 px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Projet" %}</p>
+      <ul class="space-y-0.5 text-sm">
+        <li>
+          <a href="{% url 'dashboard:project-list' %}" {% if '/dashboard/projects' in request.path %}aria-current="page" class="flex items-center gap-3 rounded-md bg-g-800 px-3 py-2 font-medium text-g-blue"{% else %}class="flex items-center gap-3 rounded-md px-3 py-2 text-g-muted hover:bg-g-800 hover:text-g-text"{% endif %}>
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 7.5 12 3l8.25 4.5v9L12 21l-8.25-4.5v-9Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 7.5 8.25 4.5 8.25-4.5M12 12v9"/></svg>
+            {% translate "Projets" %}
+          </a>
+          {# Sous-navigation du projet courant : visible uniquement sur une page projet (le bloc `tab` n'est posé que là). #}
+          {% if project and tab %}
+            <ul class="mt-0.5 space-y-0.5 pl-7 text-sm">
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=overview" {% if tab == 'overview' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Vue d'ensemble" %}</a></li>
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=keys" {% if tab == 'keys' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Clés API" %}</a></li>
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=sessions" {% if tab == 'sessions' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Sessions" %}</a></li>
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=integration" {% if tab == 'integration' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Intégration" %}</a></li>
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=settings" {% if tab == 'settings' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Paramètres" %}</a></li>
+            </ul>
+          {% endif %}
+        </li>
+      </ul>
+
+      {# Section RESSOURCES #}
+      <p class="mt-5 px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Ressources" %}</p>
+      <ul class="space-y-0.5 text-sm">
+        <li>
+          {% url 'dashboard:docs' as docs_url %}
+          <a href="{{ docs_url }}" {% if request.path == docs_url %}aria-current="page" class="flex items-center gap-3 rounded-md bg-g-800 px-3 py-2 font-medium text-g-blue"{% else %}class="flex items-center gap-3 rounded-md px-3 py-2 text-g-muted hover:bg-g-800 hover:text-g-text"{% endif %}>
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25M6.75 17.25 1.5 12l5.25-5.25M14.25 3.75l-4.5 16.5"/></svg>
+            {% translate "Documentation API" %}
+          </a>
+        </li>
+      </ul>
+
+      {# Section PARAMÈTRES #}
+      <p class="mt-5 px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Paramètres" %}</p>
+      <ul class="space-y-0.5 text-sm">
+        <li>
+          <a href="{% url 'dashboard:account' %}" {% if request.path == '/dashboard/account/' %}aria-current="page" class="flex items-center gap-3 rounded-md bg-g-800 px-3 py-2 font-medium text-g-blue"{% else %}class="flex items-center gap-3 rounded-md px-3 py-2 text-g-muted hover:bg-g-800 hover:text-g-text"{% endif %}>
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg>
+            {% translate "Compte" %}
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="px-6 py-4 text-xs text-g-faint">v1.0</div>
+  </aside>
+
+  {# ----- Colonne de contenu ----- #}
+  {% comment %} `min-w-0` : sans lui, une longue chaîne (URL, hash, user-agent) force la piste
+     `1fr` du grid à s'élargir et fait déborder TOUTE la page horizontalement sur mobile. {% endcomment %}
+  <div class="flex min-h-screen min-w-0 flex-col">
+    <header class="flex h-14 items-center justify-between gap-4 border-b border-g-800 bg-g-900 px-4 lg:px-6">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" data-sidebar-toggle aria-expanded="false" aria-controls="sidebar"
+                class="rounded-md p-2 text-g-muted hover:bg-g-800 hover:text-g-text lg:hidden">
+          <span class="sr-only">{% translate "Ouvrir le menu" %}</span>
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+        </button>
+        <nav aria-label="{% translate 'Fil d’Ariane' %}" class="flex min-w-0 items-center text-sm text-g-muted">
+          {% block breadcrumb %}{% endblock %}
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2">
+        {# Recherche globale : redirige vers la liste des projets filtrée (réutilise le filtre `q`). #}
+        <form method="get" action="{% url 'dashboard:project-list' %}" role="search" class="hidden md:block">
+          <label for="global-search" class="sr-only">{% translate "Rechercher un projet" %}</label>
+          <input id="global-search" name="q" type="search" value="{{ q }}"
+                 placeholder="{% translate 'Rechercher un projet' %}"
+                 class="w-56 rounded-full border border-g-700 bg-g-800 px-4 py-1.5 text-sm text-g-text placeholder:text-g-faint focus:border-g-blue focus:outline-none lg:w-64">
+        </form>
+        <button type="button" data-dialog-open="user-menu-dialog"
+                class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm text-g-text hover:bg-g-800">
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-g-accent text-xs font-semibold uppercase text-white" aria-hidden="true">{{ request.user.email|first }}</span>
+          <span class="hidden max-w-[12rem] truncate sm:inline">{{ developer.full_name|default:request.user.email }}</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="main" class="flex-1 px-4 py-6 lg:px-8">
+      {% include "components/messages.html" %}
+
+      {# Bannière de statut développeur (06_FRONTEND_GUIDE.md §7). #}
+      {% if developer_status == 'pending' %}
+        {% translate "Votre compte est en attente de validation par notre équipe. Vous pouvez préparer vos projets ; l'intégration ne sera opérationnelle qu'après validation." as banner_pending %}
+        <div class="mb-4">{% include "components/alert.html" with level="info" message=banner_pending %}</div>
+      {% elif developer_status == 'suspended' %}
+        {% translate "Votre compte est suspendu. Contactez le support." as banner_suspended %}
+        <div class="mb-4">{% include "components/alert.html" with level="error" message=banner_suspended %}</div>
+      {% endif %}
+
+      {% block page_header %}{% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+{# Menu utilisateur (déconnexion en POST — allauth n'accepte pas un lien GET). #}
+<dialog id="user-menu-dialog" class="w-full max-w-xs rounded-lg border border-g-700 bg-g-850 p-0 text-g-text">
+  <div class="p-4">
+    <p class="text-sm font-medium text-g-text">{{ developer.full_name|default:request.user.email }}</p>
+    <p class="text-xs text-g-muted">{{ request.user.email }}</p>
+    <div class="mt-4 space-y-2">
+      <a href="{% url 'dashboard:account' %}" class="block rounded-md px-3 py-2 text-sm text-g-muted hover:bg-g-800 hover:text-g-text">{% translate "Compte" %}</a>
+      <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="block w-full rounded-md px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10">{% translate "Se déconnecter" %}</button>
+      </form>
+      <button type="button" data-dialog-close class="block w-full rounded-md px-3 py-2 text-left text-sm text-g-muted hover:bg-g-800 hover:text-g-text">{% translate "Fermer" %}</button>
+    </div>
+  </div>
+</dialog>
+{% endblock %}

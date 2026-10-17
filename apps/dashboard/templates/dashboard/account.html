@@ -1,0 +1,56 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{# Paramètres du compte (UC-1, 06_FRONTEND_GUIDE.md §8.9) — thème « console » sombre. #}
+
+{% block title %}{% translate "Compte" %}{% endblock %}
+
+{% block breadcrumb %}
+  <span class="font-medium text-g-text">{% translate "Compte" %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <h1 class="mb-6 text-2xl font-medium text-g-text">{% translate "Compte" %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="max-w-2xl space-y-6">
+    {# --- Profil --- #}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+      <h2 class="text-sm font-medium text-g-text">{% translate "Profil" %}</h2>
+      <form method="post" class="mt-4 space-y-5">
+        {% csrf_token %}
+        {% include "components/form_field.html" with field=form.full_name %}
+        <div>
+          <label class="block text-sm font-medium text-g-muted">{% translate "Adresse email" %}</label>
+          <p class="mt-1 text-sm text-g-text">{{ request.user.email }}</p>
+          <a href="{% url 'account_email' %}" class="text-xs font-medium text-g-blue hover:text-g-blue/80">{% translate "Gérer mes adresses email" %}</a>
+        </div>
+        {% translate "Enregistrer" as save_label %}
+        {% include "components/button.html" with label=save_label variant="primary" type="submit" %}
+      </form>
+    </div>
+
+    {# --- Comptes connectés --- #}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+      <h2 class="text-sm font-medium text-g-text">{% translate "Comptes connectés" %}</h2>
+      <p class="mt-2 text-sm text-g-muted">{% translate "Gérez les fournisseurs Google / GitHub liés à votre compte." %}</p>
+      <a href="{% url 'socialaccount_connections' %}" class="mt-2 inline-block text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Gérer les connexions" %}</a>
+    </div>
+
+    {# --- Sécurité --- #}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-6">
+      <h2 class="text-sm font-medium text-g-text">{% translate "Sécurité" %}</h2>
+      <a href="{{ password_url }}" class="mt-2 inline-block text-sm font-medium text-g-blue hover:text-g-blue/80">{{ password_label }}</a>
+    </div>
+
+    {# --- Zone de danger --- #}
+    <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-6">
+      <h2 class="text-sm font-medium text-red-300">{% translate "Zone de danger" %}</h2>
+      <p class="mt-2 text-sm text-red-200">{% translate "Désactiver mon compte. Vos projets seront archivés." %}</p>
+      <div class="mt-4">
+        {% translate "Supprimer mon compte" as delete_label %}
+        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

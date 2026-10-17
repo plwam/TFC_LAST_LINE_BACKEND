@@ -1,0 +1,8 @@
+{% load i18n %}
+{% comment %} Boîte d'alerte commune aux deux thèmes (voir components/alert.html).
+   Paramètres : box (classes de la boîte), close (classes du bouton de fermeture), role.
+   `message` et `dismissible` proviennent du contexte de l'appelant. {% endcomment %}
+<div class="flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-sm {{ box }}" role="{{ role }}">
+  <p>{{ message }}</p>
+  {% if dismissible|default_if_none:"1" != "0" %}<button type="button" class="shrink-0 {{ close }}" data-dismiss-alert aria-label="{% translate 'Fermer' %}">&times;</button>{% endif %}
+</div>

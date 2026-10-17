@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% comment %} Vue de métriques plateforme (UC-13). Compteurs agrégés, aucune donnée personnelle
+   étudiante. Accessible au staff via admin.site.admin_view. {% endcomment %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate "Accueil" %}</a>
+    &rsaquo; {% translate "Métriques" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Métriques de la plateforme" %}</h1>
+
+  <div class="module" style="margin-top:1rem;">
+    <table style="width:auto;">
+      <caption class="visually-hidden">{% translate "Compteurs agrégés" %}</caption>
+      <tbody>
+        <tr><th scope="row">{% translate "Développeurs" %}</th><td>{{ metrics.developers_total }}</td></tr>
+        {% for row in metrics.developers_by_status %}
+          <tr><th scope="row">&nbsp;&nbsp;— {{ row.status }}</th><td>{{ row.n }}</td></tr>
+        {% endfor %}
+        <tr><th scope="row">{% translate "Projets (total)" %}</th><td>{{ metrics.projects_total }}</td></tr>
+        <tr><th scope="row">&nbsp;&nbsp;— {% translate "actifs" %}</th><td>{{ metrics.projects_active }}</td></tr>
+        <tr><th scope="row">&nbsp;&nbsp;— {% translate "archivés" %}</th><td>{{ metrics.projects_archived }}</td></tr>
+        <tr><th scope="row">{% translate "Sessions (total)" %}</th><td>{{ metrics.sessions_total }}</td></tr>
+        <tr><th scope="row">&nbsp;&nbsp;— {% translate "actives" %}</th><td>{{ metrics.sessions_active }}</td></tr>
+        <tr><th scope="row">&nbsp;&nbsp;— {% translate "risque élevé" %}</th><td>{{ metrics.sessions_high_risk }}</td></tr>
+        <tr><th scope="row">{% translate "Événements (total)" %}</th><td>{{ metrics.events_total }}</td></tr>
+        <tr><th scope="row">&nbsp;&nbsp;— {% translate "critiques" %}</th><td>{{ metrics.events_critical }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

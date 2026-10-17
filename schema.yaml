@@ -1,0 +1,1070 @@
+openapi: 3.0.3
+info:
+  title: ExamSDK API
+  version: 1.0.0
+  description: API JWT (clients développeur) et API machine HMAC (SDK / LMS). Le tableau
+    de bord web n'est pas documenté ici (vues templates, session Django).
+paths:
+  /api/v1/auth/token/:
+    post:
+      operationId: api_v1_auth_token_create
+      description: |-
+        Authentifie un développeur par **email + mot de passe** et renvoie un couple de jetons JWT (`access` court, `refresh` long). Contrairement à la connexion par session du tableau de bord, cette surface est destinée à de futurs clients non-navigateur (mobile, desktop, scripts).
+
+        L'identifiant est l'**email** (et non le `username`). En cas d'échec, le message est toujours identique (`Identifiants invalides.`) afin de ne pas révéler si un compte existe. Le `access` se présente ensuite en en-tête `Authorization: Bearer <token>`.
+      summary: Obtenir un jeton JWT (connexion par email)
+      tags:
+      - Authentification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+            examples:
+              Connexion:
+                value:
+                  email: dev@example.com
+                  password: motdepasse
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                Jetons:
+                  value:
+                    refresh: eyJhbGciOiJIUzI1NiIs...
+                    access: eyJhbGciOiJIUzI1NiIs...
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: api_v1_auth_token_refresh_create
+      description: Échange un jeton `refresh` encore valide contre un nouveau jeton
+        `access`, sans redemander le mot de passe. À utiliser lorsque l'`access` (30
+        min) a expiré. Un `refresh` expiré (7 jours) oblige à se reconnecter.
+      summary: Rafraîchir un jeton d'accès
+      tags:
+      - Authentification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+            examples:
+              Rafraîchir:
+                value:
+                  refresh: eyJhbGciOiJIUzI1NiIs...
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                NouveauJetonD'accès:
+                  value:
+                    access: eyJhbGciOiJIUzI1NiIs...
+                  summary: Nouveau jeton d'accès
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/machine/events/:
+    get:
+      operationId: api_v1_machine_events_list
+      description: 'Renvoie les événements du projet authentifié, du plus récent au
+        plus ancien (500 au maximum). Les filtres `exam_id`, `student_id` et `type`
+        permettent de cibler une passation précise ou un type de détection (ex. tous
+        les `MULTIPLE_FACES` d''un examen). Aucun événement d''un autre projet n''est
+        jamais retourné : le résultat est scopé sur le projet de la signature.'
+      summary: Consulter les événements d'un projet
+      parameters:
+      - in: query
+        name: exam_id
+        schema:
+          type: string
+        description: Filtre sur l'identifiant d'examen.
+      - in: query
+        name: student_id
+        schema:
+          type: string
+        description: Filtre sur l'identifiant d'étudiant.
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Filtre sur un type d'événement (ex. FOCUS_LOST).
+      tags:
+      - Machine (HMAC)
+      security:
+      - HMAC: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRead'
+              examples:
+                DeuxÉvénements:
+                  value:
+                  - - id: 9c2f...
+                      event_id: e-0002
+                      type: GAZE_AWAY_SUSTAINED
+                      source: sdk
+                      confidence_score: 0.87
+                      sdk_version: 1.2.0
+                      integrity_hash: ''
+                      metadata:
+                        durationMs: 3400
+                      occurred_at: '2024-10-15T12:28:05Z'
+                  summary: Deux événements
+          description: ''
+    post:
+      operationId: api_v1_machine_events_create
+      description: |-
+        Ingère un **lot** d'événements de surveillance pour une session (le SDK regroupe plusieurs détections dans un même envoi réseau). L'ingestion est **idempotente par `event_id`** : un renvoi réseau du même lot ne crée pas de doublon, il est compté dans `duplicates`. Chaque événement est inséré dans sa propre transaction, un doublon isolé n'échoue donc pas tout le lot.
+
+        La réponse renvoie `accepted` et `duplicates` (HTTP 202). Après acceptation, le score de risque de la session est recalculé en tâche de fond (jamais dans le chemin de la réponse). La signature couvre la chaîne `project_id|session_id|issued_at`.
+      summary: Envoyer un lot d'événements
+      tags:
+      - Machine (HMAC)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatch'
+            examples:
+              LotDeDeuxÉvénements:
+                value:
+                  session_id: 6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f
+                  issued_at: 1729000100
+                  events:
+                  - event_id: e-0001
+                    type: FOCUS_LOST
+                    source: sdk
+                    occurred_at: '2024-10-15T12:28:00Z'
+                  - event_id: e-0002
+                    type: GAZE_AWAY_SUSTAINED
+                    source: sdk
+                    confidence_score: 0.87
+                    metadata:
+                      durationMs: 3400
+                      gaze:
+                        yawDeg: 32
+                        pitchDeg: 5
+                    occurred_at: '2024-10-15T12:28:05Z'
+                summary: Lot de deux événements
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventBatch'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventBatch'
+        required: true
+      security:
+      - HMAC: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                LotAccepté:
+                  value:
+                    accepted: 2
+                    duplicates: 0
+                  summary: Lot accepté
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/machine/sessions/:
+    post:
+      operationId: api_v1_machine_sessions_create
+      description: |-
+        Ouvre une session pour un couple (examen, étudiant) et renvoie son identifiant, que le SDK réutilisera à chaque envoi d'événements. L'appel est **idempotent** : si une session ACTIVE existe déjà pour ce couple, elle est renvoyée telle quelle (HTTP 200) au lieu d'en créer une seconde (HTTP 201). Cela évite qu'un simple rechargement de la page d'examen ne crée des sessions en double.
+
+        La requête doit être **signée** : en-têtes `X-ExamSDK-Public-Key` et `X-ExamSDK-Signature`, avec la chaîne canonique `project_id|exam_id|student_id|issued_at` (voir l'exemple).
+      summary: Ouvrir une session d'examen
+      tags:
+      - Machine (HMAC)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreate'
+            examples:
+              OuvrirUneSession:
+                value:
+                  exam_id: MATH-2024-S1
+                  student_id: etu-1042
+                  issued_at: 1729000000
+                  sdk_version: 1.2.0
+                summary: Ouvrir une session
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionCreate'
+        required: true
+      security:
+      - HMAC: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                SessionCréée:
+                  value:
+                    session_id: 6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f
+                    status: active
+                    started_at: '2024-10-15T12:26:40Z'
+                  summary: Session créée
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/machine/sessions/{id}/close/:
+    post:
+      operationId: api_v1_machine_sessions_close_create
+      description: |-
+        Clôt une session ouverte. Par défaut la session devient `closed` (« Terminée ») ; avec `invalid: true` elle devient `invalid` (« Invalide ») — cas d'une session interrompue ou compromise, utilisable par un LMS qui constate une fraude. L'horodatage de fin (`ended_at`) n'est écrit qu'une seule fois : reclôturer une session ne réécrit pas sa fin.
+
+        Une session appartenant à un autre projet renvoie **404** (jamais 403) : on ne révèle pas l'existence d'une ressource d'un autre développeur.
+      summary: Clôturer une session d'examen
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Machine (HMAC)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionClose'
+            examples:
+              ClôturerNormalement:
+                value:
+                  invalid: false
+                summary: Clôturer normalement
+              MarquerInvalide:
+                value:
+                  invalid: true
+                  issued_at: 1729003600
+                  session_id: 6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f
+                summary: Marquer invalide
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionClose'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionClose'
+      security:
+      - HMAC: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                SessionClôturée:
+                  value:
+                    session_id: 6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f
+                    status: closed
+                  summary: Session clôturée
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/projects/:
+    get:
+      operationId: api_v1_projects_list
+      description: Renvoie la liste des projets **non archivés** du développeur authentifié,
+        du plus récent au plus ancien. Chaque projet expose sa clé publique et la
+        forme masquée de sa clé secrète (`sk_live_••••1234`) — jamais la clé secrète
+        en clair.
+      summary: Lister ses projets
+      tags:
+      - Projets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+          description: ''
+    post:
+      operationId: api_v1_projects_create
+      description: |-
+        Crée un projet et lui **génère immédiatement** un couple de clés (publique + secrète). La création et la génération des clés sont atomiques et passent par le même service que le tableau de bord. L'action est journalisée (`AccessLog`).
+
+        La `secret_key` n'est renvoyée par AUCUN de ces endpoints en clair ; utilisez l'action dédiée de régénération (qui la renvoie une seule fois) ou la revelation du tableau de bord.
+      summary: Créer un projet
+      tags:
+      - Projets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+            examples:
+              CréerUnProjet:
+                value:
+                  name: Examens Univ-A
+                  description: Surveillance des partiels de maths
+                  site_url: https://examens.univ-a.edu
+                summary: Créer un projet
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Project'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Project'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+              examples:
+                ProjetCréé:
+                  value:
+                    id: 3c8e...
+                    name: Examens Univ-A
+                    description: Surveillance des partiels de maths
+                    site_url: https://examens.univ-a.edu
+                    public_key: pk_live_9f2c...
+                    masked_secret: sk_live_••••a1b2
+                    is_archived: false
+                    created_at: '2024-10-15T12:20:00Z'
+                    updated_at: '2024-10-15T12:20:00Z'
+                  summary: Projet créé
+          description: ''
+  /api/v1/projects/{id}/:
+    get:
+      operationId: api_v1_projects_retrieve
+      description: 'Renvoie les informations d''un projet du développeur. Un projet
+        appartenant à un autre développeur renvoie **404** (jamais 403) : son existence
+        n''est pas révélée.'
+      summary: Détail d'un projet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this projet.
+        required: true
+      tags:
+      - Projets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    put:
+      operationId: api_v1_projects_update
+      description: Met à jour les champs modifiables (`name`, `description`, `site_url`).
+        Les clés et l'état d'archivage ne sont jamais modifiables par cet endpoint.
+        Action journalisée.
+      summary: Modifier un projet (remplacement)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this projet.
+        required: true
+      tags:
+      - Projets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Project'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Project'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    patch:
+      operationId: api_v1_projects_partial_update
+      description: Comme la modification complète, mais ne touche que les champs fournis.
+      summary: Modifier un projet (partiel)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this projet.
+        required: true
+      tags:
+      - Projets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    delete:
+      operationId: api_v1_projects_destroy
+      description: '**Archive** le projet (équivalent fonctionnel de la suppression).
+        Le projet disparaît des listes et ses clés cessent d''être acceptées, mais
+        les sessions et événements déjà collectés sont **conservés** (un événement
+        est une preuve, il n''est jamais supprimé). Une purge définitive relèverait
+        d''une tâche de maintenance privilégiée distincte.'
+      summary: Archiver un projet (pas de suppression physique)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this projet.
+        required: true
+      tags:
+      - Projets
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/projects/{id}/regenerate-secret/:
+    post:
+      operationId: api_v1_projects_regenerate_secret_create
+      description: 'Génère un nouveau couple de clés pour le projet. L''ancienne `secret_key`
+        devient **immédiatement invalide** : toute session signée avec elle cesse
+        d''être acceptée (UC-3). La nouvelle clé est renvoyée **une seule fois**,
+        ici, et la réponse n''est pas mise en cache (`Cache-Control: no-store`). L''opération
+        est journalisée comme action sensible.'
+      summary: Régénérer la clé secrète
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this projet.
+        required: true
+      tags:
+      - Projets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                NouvelleClé:
+                  value:
+                    secret_key: sk_live_5f3a...a1b2
+                  summary: Nouvelle clé
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/sessions/:
+    get:
+      operationId: api_v1_sessions_list
+      description: Renvoie les sessions d'examen du développeur authentifié, de la
+        plus récente à la plus ancienne, tous projets confondus. Chaque session indique
+        son `status` (`active` / `closed` / `invalid`), sa durée calculée et son `risk_score`
+        (indicateur d'aide à la décision, pas une preuve de fraude).
+      summary: Lister ses sessions
+      tags:
+      - Sessions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExamSession'
+          description: ''
+  /api/v1/sessions/{id}/:
+    get:
+      operationId: api_v1_sessions_retrieve
+      description: 'Renvoie une session précise. Une session d''un autre développeur
+        renvoie **404**. Les événements associés ne sont **pas** exposés par cette
+        surface JWT : ils sont consommés via l''API machine HMAC ou consultés dans
+        le tableau de bord.'
+      summary: Détail d'une session
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this session d'examen.
+        required: true
+      tags:
+      - Sessions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSession'
+          description: ''
+  /health/:
+    get:
+      operationId: health_retrieve
+      description: |-
+        Endpoint trivial de type *health check*, destiné aux outils de supervision (et à la plateforme d'hébergement). Il **ne touche pas la base de données** : il répond dès lors que le processus web est vivant, ce qui permet de distinguer une panne d'application d'une panne de base.
+
+        La forme de la réponse est volontairement stable (`{"status": "ok"}`) pour être consommée par un simple test `HTTP 200`. Le même contrôle est aussi exposé à la racine `/health/`.
+      summary: Sonde de disponibilité (monitoring)
+      tags:
+      - Public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                ServiceDisponible:
+                  value:
+                    status: ok
+                  summary: Service disponible
+          description: ''
+  /public/health/:
+    get:
+      operationId: public_health_retrieve
+      description: |-
+        Endpoint trivial de type *health check*, destiné aux outils de supervision (et à la plateforme d'hébergement). Il **ne touche pas la base de données** : il répond dès lors que le processus web est vivant, ce qui permet de distinguer une panne d'application d'une panne de base.
+
+        La forme de la réponse est volontairement stable (`{"status": "ok"}`) pour être consommée par un simple test `HTTP 200`. Le même contrôle est aussi exposé à la racine `/health/`.
+      summary: Sonde de disponibilité (monitoring)
+      tags:
+      - Public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                ServiceDisponible:
+                  value:
+                    status: ok
+                  summary: Service disponible
+          description: ''
+  /public/registered-hosts/:
+    get:
+      operationId: public_registered_hosts_retrieve
+      description: |-
+        Renvoie la liste des **noms d'hôtes** sur lesquels l'extension de surveillance doit s'activer. La liste est dérivée des `site_url` des projets **non archivés** : dès qu'un projet est archivé (sa « suppression »), son domaine disparaît de cette réponse et l'extension cesse d'y déployer la surveillance.
+
+        Aucune authentification n'est requise — l'extension embarque cette URL publique. Par minimisation, seuls les noms d'hôtes sont exposés (jamais l'URL complète, jamais un chemin, jamais une clé ni un identifiant de projet). La réponse est mise en cache 5 minutes côté serveur et accompagnée d'un `Cache-Control` court côté navigateur, afin de ne pas solliciter la base à chaque navigation de l'étudiant.
+      summary: Hôtes autorisés (pour l'extension navigateur)
+      tags:
+      - Public
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+              examples:
+                DeuxDomainesAutorisés:
+                  value:
+                    hosts:
+                    - examens.univ-a.edu
+                    - examens.univ-b.edu
+                    count: 2
+                  summary: Deux domaines autorisés
+          description: ''
+components:
+  schemas:
+    EmailTokenObtainPair:
+      type: object
+      description: |-
+        JWT dont l'identifiant est l'EMAIL, pas le username.
+
+        Pourquoi un sérialiseur dédié : le `User` hérite d'`AbstractUser` (champ `username`), mais
+        la plateforme s'authentifie par email (`ACCOUNT_LOGIN_METHODS = {'email'}`). Le
+        `TokenObtainPairSerializer` par défaut interroge le backend Django avec `username`, ce qui
+        échouerait ici. On authentifie donc explicitement par email (insensible à la casse).
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+    EventBatch:
+      type: object
+      description: Lot d'événements envoyé par le SDK/extension (d'un seul envoi réseau).
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventIngest'
+      required:
+      - events
+    EventIngest:
+      type: object
+      description: |-
+        Un événement du lot. Les champs de `metadata` ne sont pas validés en profondeur : ils
+        proviennent d'un navigateur et ne doivent jamais déclencher d'erreur serveur (§9 défensif).
+      properties:
+        event_id:
+          type: string
+          maxLength: 128
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          default: sdk
+        confidence_score:
+          type: number
+          format: double
+          nullable: true
+        sdk_version:
+          type: string
+          default: ''
+          maxLength: 50
+        user_agent:
+          type: string
+          default: ''
+        integrity_hash:
+          type: string
+          default: ''
+          maxLength: 128
+        metadata: {}
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - event_id
+      - occurred_at
+      - type
+    EventRead:
+      type: object
+      description: Représentation d'un événement pour `GET /api/v1/machine/events/`
+        (lecture).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_id:
+          type: string
+          maxLength: 128
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+        confidence_score:
+          type: number
+          format: double
+          nullable: true
+        sdk_version:
+          type: string
+          maxLength: 50
+        integrity_hash:
+          type: string
+          maxLength: 128
+        metadata: {}
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - event_id
+      - id
+      - occurred_at
+      - type
+    ExamSession:
+      type: object
+      description: Session d'examen exposée en lecture seule (mêmes données que l'onglet
+        Sessions).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+          readOnly: true
+        exam_id:
+          type: string
+          readOnly: true
+        student_id:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        risk_score:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        duration_seconds:
+          type: integer
+          readOnly: true
+      required:
+      - duration_seconds
+      - ended_at
+      - exam_id
+      - id
+      - project
+      - risk_score
+      - started_at
+      - status
+      - student_id
+    PatchedProject:
+      type: object
+      description: Projet exposé à son propriétaire. `secret_key` volontairement ABSENTE.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        site_url:
+          type: string
+          format: uri
+          maxLength: 500
+        public_key:
+          type: string
+          readOnly: true
+        masked_secret:
+          type: string
+          readOnly: true
+        is_archived:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Project:
+      type: object
+      description: Projet exposé à son propriétaire. `secret_key` volontairement ABSENTE.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        site_url:
+          type: string
+          format: uri
+          maxLength: 500
+        public_key:
+          type: string
+          readOnly: true
+        masked_secret:
+          type: string
+          readOnly: true
+        is_archived:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_archived
+      - masked_secret
+      - name
+      - public_key
+      - site_url
+      - updated_at
+    SessionClose:
+      type: object
+      description: Corps de `POST /api/v1/machine/sessions/{id}/close/`.
+      properties:
+        invalid:
+          type: boolean
+          default: false
+    SessionCreate:
+      type: object
+      description: Corps de `POST /api/v1/machine/sessions/` (hors champs de signature).
+      properties:
+        exam_id:
+          type: string
+          maxLength: 255
+        student_id:
+          type: string
+          maxLength: 255
+        sdk_version:
+          type: string
+          default: ''
+          maxLength: 50
+        started_at:
+          type: string
+          format: date-time
+      required:
+      - exam_id
+      - student_id
+    SourceEnum:
+      enum:
+      - sdk
+      - extension
+      type: string
+      description: |-
+        * `sdk` - sdk
+        * `extension` - extension
+    StatusEnum:
+      enum:
+      - active
+      - closed
+      - invalid
+      type: string
+      description: |-
+        * `active` - active
+        * `closed` - closed
+        * `invalid` - invalid
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TypeEnum:
+      enum:
+      - FOCUS_LOST
+      - TAB_SWITCH
+      - COPY_PASTE_TEXT
+      - CLIPBOARD_IMAGE_PASTE
+      - PAGE_EXIT
+      - DOM_TAMPERING
+      - DEVTOOLS_OPEN
+      - FULLSCREEN_EXIT
+      - PRINT_ATTEMPT
+      - SUSPICIOUS_KEY_COMBO
+      - IDLE_TIMEOUT
+      - MULTI_MONITOR_DETECTED
+      - AUTOMATION_DETECTED
+      - EXTENSION_HEARTBEAT_LOST
+      - SIMULATED_EVENT_DETECTED
+      - NO_FACE_DETECTED
+      - MULTIPLE_FACES
+      - FORBIDDEN_OBJECT_DETECTED
+      - VIRTUAL_DEVICE_DETECTED
+      - GAZE_AWAY_SUSTAINED
+      - REPEATED_HEAD_TURN
+      - HANDS_VISIBLE_SUSTAINED
+      - AUDIO_KEYWORD_MATCH
+      - MULTIPLE_VOICES
+      - TAB_CHANGE_EXT
+      - NAVIGATION_EXT
+      - SUSPICIOUS_ENVIRONMENT
+      type: string
+      description: |-
+        * `FOCUS_LOST` - FOCUS_LOST
+        * `TAB_SWITCH` - TAB_SWITCH
+        * `COPY_PASTE_TEXT` - COPY_PASTE_TEXT
+        * `CLIPBOARD_IMAGE_PASTE` - CLIPBOARD_IMAGE_PASTE
+        * `PAGE_EXIT` - PAGE_EXIT
+        * `DOM_TAMPERING` - DOM_TAMPERING
+        * `DEVTOOLS_OPEN` - DEVTOOLS_OPEN
+        * `FULLSCREEN_EXIT` - FULLSCREEN_EXIT
+        * `PRINT_ATTEMPT` - PRINT_ATTEMPT
+        * `SUSPICIOUS_KEY_COMBO` - SUSPICIOUS_KEY_COMBO
+        * `IDLE_TIMEOUT` - IDLE_TIMEOUT
+        * `MULTI_MONITOR_DETECTED` - MULTI_MONITOR_DETECTED
+        * `AUTOMATION_DETECTED` - AUTOMATION_DETECTED
+        * `EXTENSION_HEARTBEAT_LOST` - EXTENSION_HEARTBEAT_LOST
+        * `SIMULATED_EVENT_DETECTED` - SIMULATED_EVENT_DETECTED
+        * `NO_FACE_DETECTED` - NO_FACE_DETECTED
+        * `MULTIPLE_FACES` - MULTIPLE_FACES
+        * `FORBIDDEN_OBJECT_DETECTED` - FORBIDDEN_OBJECT_DETECTED
+        * `VIRTUAL_DEVICE_DETECTED` - VIRTUAL_DEVICE_DETECTED
+        * `GAZE_AWAY_SUSTAINED` - GAZE_AWAY_SUSTAINED
+        * `REPEATED_HEAD_TURN` - REPEATED_HEAD_TURN
+        * `HANDS_VISIBLE_SUSTAINED` - HANDS_VISIBLE_SUSTAINED
+        * `AUDIO_KEYWORD_MATCH` - AUDIO_KEYWORD_MATCH
+        * `MULTIPLE_VOICES` - MULTIPLE_VOICES
+        * `TAB_CHANGE_EXT` - TAB_CHANGE_EXT
+        * `NAVIGATION_EXT` - NAVIGATION_EXT
+        * `SUSPICIOUS_ENVIRONMENT` - SUSPICIOUS_ENVIRONMENT
+  securitySchemes:
+    HMAC:
+      type: apiKey
+      in: header
+      name: X-ExamSDK-Signature
+      description: 'Signature HMAC-SHA256 (hexadécimal) de la chaîne canonique, calculée
+        avec la `secret_key` du projet. Doit être accompagnée de l''en-tête `X-ExamSDK-Public-Key`
+        (la `public_key` du projet, non secrète) et de la valeur `issued_at` (epoch
+        secondes) présente dans le corps ou l''URL. Chaîne canonique : `project_id|exam_id|student_id|issued_at`
+        à la création d''une session ; `project_id|session_id|issued_at` pour les
+        événements.'
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Authentification
+  description: Obtention / rafraîchissement des jetons JWT développeur.
+- name: Projets
+  description: CRUD des projets et cycle de vie des clés (API JWT).
+- name: Sessions
+  description: Consultation des sessions d'examen (API JWT, lecture seule).
+- name: Machine (HMAC)
+  description: Surface consommée par le SDK et le LMS, authentifiée par signature
+    HMAC.
+- name: Public
+  description: Endpoints sans authentification (extension navigateur, monitoring).

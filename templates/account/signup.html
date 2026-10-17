@@ -1,0 +1,56 @@
+{% extends "allauth/layouts/base.html" %}
+{% load i18n %}
+{% comment %} Page de création de compte (06_FRONTEND_GUIDE.md §8.2, UC-1).
+
+   Inscription par email + mot de passe. Un lien explicite ramène vers la connexion pour les
+   visiteurs qui ont déjà un compte. Après validation, allauth impose la vérification de l'email
+   (ACCOUNT_EMAIL_VERIFICATION = "mandatory") : le message de vérification est affiché en dev
+   dans la console (EMAIL_BACKEND console). Thème sombre « console ». {% endcomment %}
+
+{% block head_title %}{% translate "Créer un compte" %}{% endblock %}
+
+{% block content %}
+  <h1 class="text-xl font-semibold text-g-text">{% translate "Créer un compte" %}</h1>
+  <p class="mt-1 text-sm text-g-muted">
+    {% translate "Vous avez déjà un compte ?" %}
+    <a href="{% url 'account_login' %}" class="font-medium text-g-blue underline-offset-2 hover:text-white hover:underline">
+      {% translate "Se connecter" %}
+    </a>
+  </p>
+
+  {% if form.non_field_errors %}
+    <div class="mt-4 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300" role="alert">
+      {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" action="{% url 'account_signup' %}" class="mt-6 space-y-4" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.field.widget.input_type == "checkbox" %}
+        <label class="flex items-start gap-2 text-sm text-g-muted">
+          {{ field }} <span>{{ field.label }}</span>
+        </label>
+      {% else %}
+        <div class="space-y-1">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-g-muted">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-g-faint">{{ field.help_text|safe }}</p>{% endif %}
+          {% if field.errors %}
+            <p id="{{ field.auto_id }}-error" class="text-sm text-red-300">{{ field.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {{ redirect_field }}
+    <button type="submit" class="w-full rounded-md bg-g-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-g-accentHover">
+      {% translate "Créer mon compte" %}
+    </button>
+  </form>
+
+  {% if SOCIALACCOUNT_ENABLED %}
+    <div class="mt-6 border-t border-g-800 pt-4">
+      {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+    </div>
+  {% endif %}
+{% endblock %}

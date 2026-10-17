@@ -1,0 +1,19 @@
+{% load i18n dashboard_extras %}
+{% comment %} Badge de risque d'une session (BF-16).
+   - `score` vaut None tant que la tâche Celery n'a pas fini : on affiche « Calcul en cours »
+     plutôt que 0 %, sinon un score vide serait lu comme « aucun risque » (faux et trompeur).
+   - Le libellé texte accompagne TOUJOURS la couleur (accessibilité : ne jamais compter sur
+     la couleur seule). Exemple : score=0.72 → « Élevé · 72 % » en rouge.
+   Thème sombre : fond translucide + anneau intérieur. {% endcomment %}
+{% if score is None %}
+  <span class="inline-flex items-center rounded-full bg-slate-500/15 px-2.5 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-inset ring-slate-500/30">{% translate "Calcul en cours" %}</span>
+{% else %}
+  {% risk_level score as level %}
+  {% if level == "high" %}
+    <span class="inline-flex items-center rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-300 ring-1 ring-inset ring-red-500/30">{% translate "Élevé" %} · {% widthratio score 1 100 %} %</span>
+  {% elif level == "medium" %}
+    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300 ring-1 ring-inset ring-amber-500/30">{% translate "Moyen" %} · {% widthratio score 1 100 %} %</span>
+  {% else %}
+    <span class="inline-flex items-center rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs font-medium text-green-300 ring-1 ring-inset ring-green-500/30">{% translate "Faible" %} · {% widthratio score 1 100 %} %</span>
+  {% endif %}
+{% endif %}

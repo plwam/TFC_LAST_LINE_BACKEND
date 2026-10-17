@@ -1,0 +1,44 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{% comment %} Confirmation d'archivage d'un projet (06_FRONTEND_GUIDE.md §8.7) — thème sombre.
+   La comparaison du nom saisi est vérifiée côté serveur par ConfirmByNameForm ; le bouton
+   désactivé n'est qu'un confort d'interface. {% endcomment %}
+
+{% block title %}{% translate "Supprimer le projet" %}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1">›</span>
+  <a href="{% url 'dashboard:project-detail' project.id %}" class="hover:text-g-text">{{ project.name }}</a>
+  <span class="mx-1">›</span>
+  <span class="font-medium text-g-text">{% translate "Supprimer" %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <h1 class="mb-6 text-2xl font-medium text-g-text">{% translate "Supprimer le projet" %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="max-w-xl rounded-lg border border-red-500/30 bg-red-500/10 p-6">
+    <p class="text-sm text-red-200">
+      {% blocktranslate with name=project.name %}Vous êtes sur le point d'archiver « {{ name }} ». Ses clés cesseront de fonctionner et les sessions ne seront plus surveillées.{% endblocktranslate %}
+    </p>
+    <form method="post" class="mt-4 space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="{{ form.confirm.id_for_label }}" class="block text-sm font-medium text-red-200">{% translate "Tapez le nom du projet pour confirmer" %}</label>
+        <div class="mt-1">{{ form.confirm }}</div>
+        {% for error in form.confirm.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+        <p class="mt-1 text-xs text-red-200/80">{% blocktranslate with name=project.name %}Saisissez : {{ name }}{% endblocktranslate %}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit" data-confirm-submit data-confirm-value="{{ project.name }}" disabled
+                class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+          {% translate "Archiver" %}
+        </button>
+        {% translate "Annuler" as cancel_label %}
+        {% include "components/button.html" with label=cancel_label href=detail_url variant="secondary" %}
+      </div>
+    </form>
+  </div>
+{% endblock %}

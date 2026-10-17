@@ -1,0 +1,23 @@
+{% load allauth %}
+{# Champ isolé d'allauth (utilisé hors du conteneur `fields`). #}
+<div class="space-y-1">
+    {% if attrs.type == "textarea" %}
+        <label for="{{ attrs.id }}" class="block text-sm font-medium text-g-muted">{% slot label %}{% endslot %}</label>
+        <textarea name="{{ attrs.name }}" id="{{ attrs.id }}" rows="{{ attrs.rows|default:3 }}"
+                  class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text shadow-sm focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40"
+                  {% if attrs.required %}required{% endif %} {% if attrs.disabled %}disabled{% endif %}>{% slot value %}{% endslot %}</textarea>
+    {% else %}
+        {% if attrs.type != "checkbox" and attrs.type != "radio" %}
+            <label for="{{ attrs.id }}" class="block text-sm font-medium text-g-muted">{% slot label %}{% endslot %}</label>
+        {% endif %}
+        <input name="{{ attrs.name }}" id="{{ attrs.id }}" type="{{ attrs.type }}"
+               value="{{ attrs.value|default_if_none:'' }}"
+               class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text shadow-sm focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40"
+               {% if attrs.required %}required{% endif %} {% if attrs.disabled %}disabled{% endif %}
+               {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}>
+        {% if attrs.type == "checkbox" or attrs.type == "radio" %}
+            <label for="{{ attrs.id }}" class="text-sm text-g-muted">{% slot label %}{% endslot %}</label>
+        {% endif %}
+    {% endif %}
+    {% if slots.help_text %}<span class="text-xs text-g-faint">{% slot help_text %}{% endslot %}</span>{% endif %}
+</div>

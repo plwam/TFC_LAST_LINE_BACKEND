@@ -1,0 +1,519 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n code_extras %}
+{% comment %} Référence des ENDPOINTS HTTP, intégrée au dashboard (`/dashboard/docs/`).
+   Pourquoi une page maison plutôt que Redoc/Swagger : ces derniers chargent leur moteur depuis un
+   CDN tiers ; si le CDN est bloqué, la page reste blanche. Ici tout est rendu CÔTÉ SERVEUR (code
+   coloré par Pygments, filtre/tag `code_extras`) et ne documente que les endpoints réels.
+
+   La documentation du SDK (JavaScript) fera l'objet d'une étape ultérieure : cette page ne couvre
+   QUE les endpoints consommables par un tiers. {% endcomment %}
+
+{% block title %}{% translate "Documentation API" %}{% endblock %}
+
+{% block breadcrumb %}
+  <span class="font-medium text-g-text">{% translate "Documentation API" %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <div class="mb-6 max-w-3xl">
+    <h1 class="text-2xl font-medium text-g-text">{% translate "Documentation API" %}</h1>
+    <p class="mt-2 text-sm text-g-muted">
+      {% translate "Référence des endpoints HTTP d'ExamSDK : authentification JWT, gestion des projets et des sessions, API machine signée (HMAC) et API publique. Chaque endpoint est accompagné d'un exemple de requête et de réponse." %}
+    </p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API machine — HMAC</span>
+      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API JWT</span>
+      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API publique</span>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10">
+
+  {# ----- Sommaire latéral (colle au défilement sur grand écran) ----- #}
+  <nav class="sticky top-6 hidden max-h-[calc(100vh-3rem)] overflow-y-auto pr-2 text-sm lg:block"
+       aria-label="{% translate 'Sommaire de la documentation' %}">
+    <p class="text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Sur cette page" %}</p>
+
+    <p class="mt-4 font-medium text-g-text">{% translate "Authentification" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#jwt-token" class="block text-g-muted hover:text-g-text">{% translate "Obtenir un jeton" %}</a></li>
+      <li><a href="#jwt-refresh" class="block text-g-muted hover:text-g-text">{% translate "Rafraîchir un jeton" %}</a></li>
+    </ul>
+
+    <p class="mt-4 font-medium text-g-text">{% translate "Projets" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#projects-list" class="block text-g-muted hover:text-g-text">{% translate "Lister les projets" %}</a></li>
+      <li><a href="#projects-create" class="block text-g-muted hover:text-g-text">{% translate "Créer un projet" %}</a></li>
+      <li><a href="#projects-detail" class="block text-g-muted hover:text-g-text">{% translate "Détail / modifier / archiver" %}</a></li>
+      <li><a href="#projects-regenerate" class="block text-g-muted hover:text-g-text">{% translate "Régénérer la clé secrète" %}</a></li>
+    </ul>
+
+    <p class="mt-4 font-medium text-g-text">{% translate "Sessions" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#sessions-list" class="block text-g-muted hover:text-g-text">{% translate "Lister les sessions" %}</a></li>
+      <li><a href="#sessions-detail" class="block text-g-muted hover:text-g-text">{% translate "Détail d'une session" %}</a></li>
+    </ul>
+
+    <p class="mt-4 font-medium text-g-text">{% translate "API machine (HMAC)" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#machine-signature" class="block text-g-muted hover:text-g-text">{% translate "Signer une requête" %}</a></li>
+      <li><a href="#machine-session-create" class="block text-g-muted hover:text-g-text">{% translate "Ouvrir une session" %}</a></li>
+      <li><a href="#machine-session-close" class="block text-g-muted hover:text-g-text">{% translate "Clôturer une session" %}</a></li>
+      <li><a href="#machine-events-post" class="block text-g-muted hover:text-g-text">{% translate "Envoyer des événements" %}</a></li>
+      <li><a href="#machine-events-get" class="block text-g-muted hover:text-g-text">{% translate "Lire les événements" %}</a></li>
+    </ul>
+
+    <p class="mt-4 font-medium text-g-text">{% translate "API publique" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#public-hosts" class="block text-g-muted hover:text-g-text">{% translate "Hôtes autorisés" %}</a></li>
+      <li><a href="#public-health" class="block text-g-muted hover:text-g-text">{% translate "Sonde de disponibilité" %}</a></li>
+    </ul>
+  </nav>
+
+  {# ----- Contenu ----- #}
+  <div class="min-w-0 space-y-12">
+
+    {# ============================ AUTHENTIFICATION ============================ #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "Authentification (JWT)" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "L'API JWT s'adresse aux clients non-navigateur (mobile, desktop, scripts). L'identifiant est l'email. Le jeton d'accès se présente ensuite dans l'en-tête" %} <code class="rounded bg-g-800 px-1.5 py-0.5 font-mono text-xs text-g-text">Authorization: Bearer &lt;access&gt;</code>.
+      </p>
+
+      {# --- Obtenir un jeton --- #}
+      <div id="jwt-token" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/auth/token/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Obtenir un jeton JWT" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Authentifie un développeur par email + mot de passe et renvoie un couple de jetons : access (courte durée) et refresh (longue durée). En cas d'échec, le message est toujours identique afin de ne pas révéler si un compte existe." %}
+        </p>
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Requête" %}</p>
+        {% code_block "doc-jwt-token-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "dev@example.com", "password": "motdepasse"}'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-jwt-token-json" "json" "JSON" %}
+{
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+        {% endcode_block %}
+      </div>
+
+      {# --- Rafraîchir --- #}
+      <div id="jwt-refresh" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/auth/token/refresh/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Rafraîchir un jeton d'accès" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Échange un jeton refresh encore valide contre un nouveau jeton access, sans redemander le mot de passe. Un refresh expiré oblige à se reconnecter." %}
+        </p>
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Requête" %}</p>
+        {% code_block "doc-jwt-refresh-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/auth/token/refresh/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-jwt-refresh-json" "json" "JSON" %}
+{
+  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+        {% endcode_block %}
+      </div>
+    </section>
+
+    {# ================================ PROJETS ================================ #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "Projets" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "CRUD des projets du développeur authentifié. La clé secrète n'apparaît JAMAIS dans ces réponses : seule sa forme masquée est exposée. Un projet d'un autre développeur renvoie 404 (jamais 403)." %}
+      </p>
+
+      {# --- Lister --- #}
+      <div id="projects-list" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses projets" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">{% translate "Renvoie les projets non archivés du développeur, du plus récent au plus ancien." %}</p>
+        {% code_block "doc-projects-list-curl" "bash" "cURL" %}
+curl https://api.examsdk.example/api/v1/projects/ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+        {% endcode_block %}
+        {% code_block "doc-projects-list-json" "json" "JSON" %}
+[
+  {
+    "id": "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01",
+    "name": "Examens Univ-A",
+    "description": "Surveillance des partiels de maths",
+    "site_url": "https://examens.univ-a.edu",
+    "public_key": "pk_live_9f2c7a1b4e...",
+    "masked_secret": "sk_live_••••a1b2",
+    "is_archived": false,
+    "created_at": "2024-10-15T12:20:00Z",
+    "updated_at": "2024-10-15T12:20:00Z"
+  }
+]
+        {% endcode_block %}
+      </div>
+
+      {# --- Créer --- #}
+      <div id="projects-create" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Créer un projet" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Crée un projet et lui génère immédiatement un couple de clés (publique + secrète). La clé secrète n'est jamais renvoyée ici : utilisez l'action de régénération pour l'obtenir une seule fois." %}
+        </p>
+        {% code_block "doc-projects-create-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/projects/ \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Examens Univ-A", "description": "Surveillance des partiels", "site_url": "https://examens.univ-a.edu"}'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">201</span></p>
+        {% code_block "doc-projects-create-json" "json" "JSON" %}
+{
+  "id": "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01",
+  "name": "Examens Univ-A",
+  "site_url": "https://examens.univ-a.edu",
+  "public_key": "pk_live_9f2c7a1b4e...",
+  "masked_secret": "sk_live_••••a1b2",
+  "is_archived": false
+}
+        {% endcode_block %}
+      </div>
+
+      {# --- Détail / modifier / archiver --- #}
+      <div id="projects-detail" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <span class="rounded bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-medium text-amber-300">PUT</span>
+          <span class="rounded bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-medium text-amber-300">PATCH</span>
+          <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-medium text-red-300">DELETE</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/{id}/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail, modification et archivage" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "GET renvoie un projet. PUT/PATCH modifient name, description et site_url (les clés et l'archivage ne sont jamais modifiables). DELETE archive le projet (pas de suppression physique) : il disparaît des listes et ses clés cessent d'être acceptées, mais ses sessions et événements sont conservés (une preuve ne se supprime pas)." %}
+        </p>
+        {% code_block "doc-projects-detail-curl" "bash" "cURL" %}
+# Détail
+curl https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# Modifier (partiel)
+curl -X PATCH https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../ \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Nouvelle description"}'
+
+# Archiver
+curl -X DELETE https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+        {% endcode_block %}
+      </div>
+
+      {# --- Régénérer la clé --- #}
+      <div id="projects-regenerate" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/{id}/regenerate-secret/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Régénérer la clé secrète" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Génère un nouveau couple de clés. L'ancienne clé secrète devient immédiatement invalide. La nouvelle clé est renvoyée UNE SEULE FOIS, ici, et la réponse n'est pas mise en cache." %}
+        </p>
+        {% code_block "doc-projects-regenerate-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../regenerate-secret/ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-projects-regenerate-json" "json" "JSON" %}
+{
+  "secret_key": "sk_live_5f3a9c1d7b...a1b2"
+}
+        {% endcode_block %}
+      </div>
+    </section>
+
+    {# =============================== SESSIONS =============================== #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "Sessions" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "Consultation en lecture seule des sessions d'examen du développeur, tous projets confondus. Le risk_score est un indicateur d'aide à la décision, pas une preuve de fraude." %}
+      </p>
+
+      <div id="sessions-list" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/sessions/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses sessions" %}</h3>
+        {% code_block "doc-sessions-list-curl" "bash" "cURL" %}
+curl https://api.examsdk.example/api/v1/sessions/ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+        {% endcode_block %}
+        {% code_block "doc-sessions-list-json" "json" "JSON" %}
+[
+  {
+    "id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f",
+    "project": "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01",
+    "exam_id": "MATH-2024-S1",
+    "student_id": "etu-1042",
+    "status": "active",
+    "risk_score": 12,
+    "started_at": "2024-10-15T12:26:40Z",
+    "ended_at": null,
+    "duration_seconds": 0
+  }
+]
+        {% endcode_block %}
+      </div>
+
+      <div id="sessions-detail" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/sessions/{id}/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail d'une session" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Renvoie une session précise (status : active / closed / invalid). Une session d'un autre développeur renvoie 404. Les événements ne sont pas exposés par cette surface : ils se consultent via l'API machine HMAC ou le tableau de bord." %}
+        </p>
+        {% code_block "doc-sessions-detail-curl" "bash" "cURL" %}
+curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+        {% endcode_block %}
+      </div>
+    </section>
+
+    {# ============================= API MACHINE ============================== #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "API machine (HMAC)" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "Surface Zero Trust consommée par le SDK et un éventuel LMS : aucune session Django, aucun JWT. Le serveur signe une chaîne canonique avec sa clé secrète. ExamSDK ne fait confiance à rien d'autre que cette signature." %}
+      </p>
+
+      {# --- Signer une requête --- #}
+      <div id="machine-signature" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <h3 class="text-base font-medium text-g-text">{% translate "Signer une requête" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Chaque requête porte deux en-têtes :" %}
+        </p>
+        <ul class="mt-2 max-w-3xl space-y-1 text-sm text-g-muted">
+          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Public-Key</code> — <span>{% translate "la clé publique du projet (jamais secrète)." %}</span></li>
+          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Signature</code> — <span>{% translate "le HMAC-SHA256 hexadécimal de la chaîne canonique, calculé avec la clé secrète." %}</span></li>
+        </ul>
+        <div class="mt-3 max-w-3xl overflow-hidden rounded-md border border-g-700 bg-g-850 text-xs text-g-muted">
+          <table class="w-full text-left">
+            <thead class="border-b border-g-700 text-[11px] uppercase tracking-wide text-g-faint">
+              <tr><th class="px-3 py-2">{% translate "Endpoint" %}</th><th class="px-3 py-2">{% translate "Chaîne canonique" %}</th></tr>
+            </thead>
+            <tbody class="font-mono">
+              <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /</td><td class="px-3 py-2">project_id|exam_id|student_id|issued_at</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /close/</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
+              <tr><td class="px-3 py-2">events /</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-2 max-w-3xl text-xs text-g-faint">
+          {% translate "issued_at est un horodatage epoch (secondes) ; il doit être frais (fenêtre de tolérance serveur). Pour les appels GET, les champs signés arrivent par les query params." %}
+        </p>
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Signer en Python" %}</p>
+        {% code_block "doc-machine-sign-python" "python" "sign.py" %}
+import hashlib
+import hmac
+import time
+
+SECRET_KEY = "sk_live_..."          # clé secrète du projet (jamais exposée au navigateur)
+PROJECT_ID = "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01"
+
+def sign(canonical: str) -> str:
+    return hmac.new(SECRET_KEY.encode(), canonical.encode(), hashlib.sha256).hexdigest()
+
+issued_at = int(time.time())
+canonical = "|".join([PROJECT_ID, "MATH-2024-S1", "etu-1042", str(issued_at)])
+signature = sign(canonical)
+        {% endcode_block %}
+      </div>
+
+      {# --- Ouvrir une session --- #}
+      <div id="machine-session-create" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/sessions/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Ouvrir une session d'examen" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Ouvre une session pour un couple (examen, étudiant) et renvoie son identifiant. L'appel est idempotent : si une session ACTIVE identique existe déjà, elle est renvoyée telle quelle (200) au lieu d'en créer une seconde (201)." %}
+        </p>
+        {% code_block "doc-machine-session-create-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/machine/sessions/ \
+  -H "X-ExamSDK-Public-Key: pk_live_9f2c7a1b4e..." \
+  -H "X-ExamSDK-Signature: <hmac-sha256-hex>" \
+  -H "Content-Type: application/json" \
+  -d '{"exam_id": "MATH-2024-S1", "student_id": "etu-1042", "issued_at": 1729000000, "sdk_version": "1.2.0"}'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">201</span> {% translate "ou" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-machine-session-create-json" "json" "JSON" %}
+{
+  "session_id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f",
+  "status": "active",
+  "started_at": "2024-10-15T12:26:40Z"
+}
+        {% endcode_block %}
+      </div>
+
+      {# --- Clôturer une session --- #}
+      <div id="machine-session-close" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/sessions/{id}/close/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Clôturer une session" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Par défaut la session devient closed (Terminée) ; avec invalid: true elle devient invalid (Invalide). L'horodatage de fin n'est écrit qu'une fois. Le corps doit porter issued_at et session_id afin que la signature puisse être reconstruite." %}
+        </p>
+        {% code_block "doc-machine-session-close-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/machine/sessions/6f1c0f2a-.../close/ \
+  -H "X-ExamSDK-Public-Key: pk_live_9f2c7a1b4e..." \
+  -H "X-ExamSDK-Signature: <hmac-sha256-hex>" \
+  -H "Content-Type: application/json" \
+  -d '{"invalid": false, "issued_at": 1729003600, "session_id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f"}'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-machine-session-close-json" "json" "JSON" %}
+{
+  "session_id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f",
+  "status": "closed"
+}
+        {% endcode_block %}
+      </div>
+
+      {# --- Envoyer des événements --- #}
+      <div id="machine-events-post" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/events/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Envoyer un lot d'événements" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Le SDK regroupe plusieurs détections dans un même envoi réseau. L'ingestion est idempotente par event_id : un renvoi du même lot est compté dans duplicates au lieu de créer des doublons. La réponse est 202." %}
+        </p>
+        {% code_block "doc-machine-events-post-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/machine/events/ \
+  -H "X-ExamSDK-Public-Key: pk_live_9f2c7a1b4e..." \
+  -H "X-ExamSDK-Signature: <hmac-sha256-hex>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "session_id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f",
+        "issued_at": 1729000100,
+        "events": [
+          {"event_id": "e-0001", "type": "FOCUS_LOST", "source": "sdk", "occurred_at": "2024-10-15T12:28:00Z"},
+          {"event_id": "e-0002", "type": "GAZE_AWAY_SUSTAINED", "source": "sdk", "confidence_score": 0.87, "occurred_at": "2024-10-15T12:28:05Z"}
+        ]
+      }'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">202</span></p>
+        {% code_block "doc-machine-events-post-json" "json" "JSON" %}
+{
+  "accepted": 2,
+  "duplicates": 0
+}
+        {% endcode_block %}
+      </div>
+
+      {# --- Lire les événements --- #}
+      <div id="machine-events-get" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/events/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lire les événements d'un projet" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Renvoie les événements du projet signé, du plus récent au plus ancien (500 au maximum). Filtres facultatifs : exam_id, student_id, type. Comme il n'y a pas de corps, issued_at et session_id sont passés dans la requête pour être signés." %}
+        </p>
+        {% code_block "doc-machine-events-get-curl" "bash" "cURL" %}
+curl "https://api.examsdk.example/api/v1/machine/events/?session_id=6f1c0f2a-...&exam_id=MATH-2024-S1&type=FOCUS_LOST&issued_at=1729000200" \
+  -H "X-ExamSDK-Public-Key: pk_live_9f2c7a1b4e..." \
+  -H "X-ExamSDK-Signature: <hmac-sha256-hex>"
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">200</span></p>
+        {% code_block "doc-machine-events-get-json" "json" "JSON" %}
+[
+  {
+    "id": "9c2f7e41-...",
+    "event_id": "e-0002",
+    "type": "GAZE_AWAY_SUSTAINED",
+    "source": "sdk",
+    "confidence_score": 0.87,
+    "sdk_version": "1.2.0",
+    "integrity_hash": "",
+    "metadata": {"durationMs": 3400},
+    "occurred_at": "2024-10-15T12:28:05Z"
+  }
+]
+        {% endcode_block %}
+      </div>
+    </section>
+
+    {# ============================= API PUBLIQUE ============================= #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "API publique" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "Endpoints sans authentification, destinés à l'extension navigateur et au monitoring." %}
+      </p>
+
+      <div id="public-hosts" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/public/registered-hosts/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Hôtes autorisés" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Liste des noms d'hôtes sur lesquels l'extension doit s'activer, dérivée des projets non archivés. Seuls les noms d'hôtes sont exposés. Réponse mise en cache quelques minutes." %}
+        </p>
+        {% code_block "doc-public-hosts-curl" "bash" "cURL" %}
+curl https://api.examsdk.example/public/registered-hosts/
+        {% endcode_block %}
+        {% code_block "doc-public-hosts-json" "json" "JSON" %}
+{
+  "hosts": ["examens.univ-a.edu", "examens.univ-b.edu"],
+  "count": 2
+}
+        {% endcode_block %}
+      </div>
+
+      <div id="public-health" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
+          <code class="font-mono text-sm text-g-text break-all">/public/health/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Sonde de disponibilité" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Health check utilisé par la supervision. Il ne touche pas la base : il répond dès que le processus web est vivant. Le même contrôle est exposé à la racine /health/." %}
+        </p>
+        {% code_block "doc-public-health-json" "json" "JSON" %}
+{
+  "status": "ok"
+}
+        {% endcode_block %}
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

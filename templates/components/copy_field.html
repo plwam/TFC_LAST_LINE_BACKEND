@@ -1,0 +1,16 @@
+{% load i18n %}
+{% comment %} Champ copiable : valeur en lecture seule + bouton « Copier » (06_FRONTEND_GUIDE.md §4.2).
+   Paramètres : id (obligatoire, unique), label, value.
+   Le retour visuel « Copié ✓ » est annoncé via aria-live par dashboard.js. {% endcomment %}
+<div class="copy-field">
+  {% if label %}<label for="{{ id }}" class="block text-sm font-medium text-g-muted">{{ label }}</label>{% endif %}
+  <div class="mt-1 flex flex-wrap items-stretch gap-2">
+    <input id="{{ id }}" type="text" readonly value="{{ value }}"
+           class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 font-mono text-sm text-g-text">
+    <button type="button" data-copy-target="{{ id }}"
+            class="shrink-0 rounded-md border border-g-600 px-3 py-2 text-sm font-medium text-g-blue hover:bg-g-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue">
+      {% translate "Copier" %}
+    </button>
+  </div>
+  <span class="sr-only" aria-live="polite" data-copy-status></span>
+</div>

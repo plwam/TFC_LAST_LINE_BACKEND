@@ -1,0 +1,37 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n %}
+{# Confirmation de désactivation du compte (06_FRONTEND_GUIDE.md §8.9) — thème sombre. #}
+
+{% block title %}{% translate "Supprimer mon compte" %}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard:account' %}" class="hover:text-g-text">{% translate "Compte" %}</a>
+  <span class="mx-1">›</span>
+  <span class="font-medium text-g-text">{% translate "Supprimer" %}</span>
+{% endblock %}
+
+{% block page_header %}
+  <h1 class="mb-6 text-2xl font-medium text-g-text">{% translate "Supprimer mon compte" %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="max-w-xl rounded-lg border border-red-500/30 bg-red-500/10 p-6">
+    <p class="text-sm text-red-200">{% translate "Votre compte sera désactivé et vos projets archivés. Cette action est irréversible depuis l'interface." %}</p>
+    <form method="post" class="mt-4 space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="{{ form.confirm.id_for_label }}" class="block text-sm font-medium text-red-200">{% translate "Saisissez votre adresse email pour confirmer" %}</label>
+        <div class="mt-1">{{ form.confirm }}</div>
+        {% for error in form.confirm.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit" data-confirm-submit data-confirm-value="{{ request.user.email }}" disabled
+                class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+          {% translate "Désactiver mon compte" %}
+        </button>
+        {% translate "Annuler" as cancel_label %}
+        {% include "components/button.html" with label=cancel_label href=cancel_url variant="secondary" %}
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% load i18n %}
+{% comment %} Affiche les messages Django en les mappant sur les niveaux d'alerte (06 §4.2).
+   SUCCESS→success, ERROR→error, WARNING→warning, INFO/DEBUG→info.
+   `theme` est transmis tel quel à components/alert.html (défaut « dark » = dashboard). {% endcomment %}
+{% if messages %}
+  <div class="space-y-2" aria-live="polite">
+    {% for message in messages %}
+      {% if message.level_tag == 'error' %}
+        {% include "components/alert.html" with level="error" message=message theme=theme %}
+      {% elif message.level_tag == 'warning' %}
+        {% include "components/alert.html" with level="warning" message=message theme=theme %}
+      {% elif message.level_tag == 'success' %}
+        {% include "components/alert.html" with level="success" message=message theme=theme %}
+      {% else %}
+        {% include "components/alert.html" with level="info" message=message theme=theme %}
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}

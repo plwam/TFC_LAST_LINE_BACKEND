@@ -1,0 +1,62 @@
+{% load i18n code_extras %}
+{% comment %} Onglet « Intégration » (BF-25, 06_FRONTEND_GUIDE.md §8.6.4) — thème sombre.
+   Les extraits doivent rester alignés sur la spec SDK (02_SDK.md §5 et §17) — étape ultérieure.
+   Ils sont pré-remplis avec la clé publique réelle et l'URL du CDN (SDK_CDN_URL). {% endcomment %}
+<div class="max-w-3xl space-y-8">
+
+  {# --- Prérequis --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Prérequis" %}</h2>
+    <ul class="mt-3 space-y-2 text-sm">
+      <li class="flex items-start gap-2">
+        <span class="mt-0.5 text-green-400" aria-hidden="true">✓</span>
+        <span class="min-w-0">{% translate "Adresse du site renseignée" %} — <span class="font-mono text-g-muted break-all">{{ project.site_url }}</span></span>
+      </li>
+      {% if developer_status == 'active' %}
+        <li class="flex items-start gap-2"><span class="mt-0.5 text-green-400" aria-hidden="true">✓</span> <span class="min-w-0">{% translate "Compte actif" %}</span></li>
+      {% else %}
+        <li class="flex items-start gap-2"><span class="mt-0.5 text-amber-400" aria-hidden="true">!</span> <span class="min-w-0">{% translate "Compte en attente de validation" %}</span></li>
+      {% endif %}
+      <li class="flex items-start gap-2"><span class="mt-0.5 text-green-400" aria-hidden="true">✓</span> <span class="min-w-0">{% translate "Clés API générées" %}</span></li>
+    </ul>
+  </section>
+
+  {# --- Étape 1 : installer le SDK --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 1 — Installer le SDK" %}</h2>
+    {% code_block "snippet-install" "html" "index.html" %}<script src="{{ sdk_cdn_url }}"></script>{% endcode_block %}
+  </section>
+
+  {# --- Étape 2 : générer le jeton de session (serveur) --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 2 — Générer le jeton de session côté serveur" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">{% translate "Le jeton est signé avec votre clé secrète (HMAC-SHA256) sur la chaîne canonique project_id|exam_id|student_id|issued_at." %}</p>
+    {% code_block "snippet-python" "python" "sign_session.py" %}import hmac, hashlib, time
+project_id = "{{ project.id }}"
+message = project_id + "|" + exam_id + "|" + student_id + "|" + str(issued_at)
+signature = hmac.new(SECRET_KEY.encode(), message.encode(), hashlib.sha256).hexdigest(){% endcode_block %}
+  </section>
+
+  {# --- Étape 3 : initialiser le SDK dans la page d'examen --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 3 — Initialiser le SDK dans la page d'examen" %}</h2>
+    {% code_block "snippet-init" "javascript" "exam-page.html" %}ExamSDK.init({
+  publicKey: "{{ project.public_key }}",
+  apiUrl: "https://api.examsdk.example",
+  // examKeywords, samplingIntervalMs, enabledDetectors, onBlock : facultatifs
+});{% endcode_block %}
+  </section>
+
+  {# --- Étape 4 : informer les étudiants --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 4 — Informer vos étudiants" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">{% translate "Expliquez-leur d'installer l'extension, d'autoriser la caméra et le micro, et précisez qu'aucune image ni audio n'est transmis." %}</p>
+  </section>
+
+  {# --- Liens + avertissement --- #}
+  <a href="{% url 'dashboard:docs' %}" class="inline-flex items-center gap-2 text-sm font-medium text-g-blue hover:text-g-blue/80">
+    <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25M6.75 17.25 1.5 12l5.25-5.25M14.25 3.75l-4.5 16.5"/></svg>
+    {% translate "Documentation des endpoints" %}
+  </a>
+  <p class="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">{% translate "Les mots-clés d'examen (examKeywords) sont transmis en clair au navigateur : ils sont visibles de l'étudiant qui inspecte la page." %}</p>
+</div>

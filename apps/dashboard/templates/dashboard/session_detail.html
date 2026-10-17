@@ -1,0 +1,112 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% load i18n dashboard_extras %}
+{% comment %} Détail d'une session + chronologie des événements (UC-6, 06_FRONTEND_GUIDE.md §8.8).
+   Les événements sont IMMUABLES : aucune action d'édition/suppression n'est exposée. {% endcomment %}
+
+{% block title %}{% blocktranslate with exam=session.exam_id %}Session {{ exam }}{% endblocktranslate %}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1">›</span>
+  <a href="{{ project_url }}" class="hover:text-g-text">{{ project.name }}</a>
+  <span class="mx-1">›</span>
+  <span class="font-medium text-g-text">{{ session.exam_id }} › {{ session.student_id }}</span>
+{% endblock %}
+
+{% block page_header %}
+  <div class="mb-4">
+    <h1 class="text-2xl font-medium text-g-text break-words">{{ session.exam_id }} · {{ session.student_id }}</h1>
+    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-g-muted">
+      {% include "components/badge_status.html" with status=session.status %}
+      <span>{% translate "Début" %} : {{ session.started_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></span>
+      {% if session.ended_at %}<span>{% translate "Fin" %} : {{ session.ended_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></span>{% endif %}
+      <span>{% translate "Durée" %} : {{ session.duration_seconds|duration }}</span>
+      <span class="inline-flex items-center gap-1">
+        {% translate "Risque" %} : {% include "components/badge_risk.html" with score=session.risk_score %}
+        <button type="button" class="text-g-faint hover:text-g-muted" title="{% translate "Score calculé automatiquement à partir du nombre, du type et de la confiance des événements. C'est un indicateur d'aide à la décision, pas une preuve de fraude." %}">
+          <span class="sr-only">{% translate "À propos du score de risque" %}</span>
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 10.5v6M12 7.5h.01"/></svg>
+        </button>
+      </span>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+  {# --- Résumé par type --- #}
+  <section class="mb-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Résumé" %}</h2>
+    {% if summary %}
+      <div class="mt-2 flex flex-wrap gap-2">
+        {% for item in summary %}
+          <span class="inline-flex items-center gap-1 rounded-full bg-g-800 px-3 py-1 text-xs text-g-muted">
+            {{ item.label }} <span class="font-medium text-g-text">{{ item.n }}</span>
+          </span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="mt-2 text-sm text-g-muted">{% translate "Aucun événement enregistré pour cette session." %}</p>
+    {% endif %}
+  </section>
+
+  {# --- Filtres de la chronologie --- #}
+  <form method="get" class="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-g-700 bg-g-850 p-4">
+    <div>
+      <label for="type" class="block text-xs font-medium text-g-muted">{% translate "Type" %}</label>
+      <select id="type" name="type" class="mt-1 rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+        <option value="">{% translate "Tous" %}</option>
+        {% for value, label in type_choices %}
+          <option value="{{ value }}" {% if filters.type == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="source" class="block text-xs font-medium text-g-muted">{% translate "Source" %}</label>
+      <select id="source" name="source" class="mt-1 rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+        <option value="">{% translate "Toutes" %}</option>
+        {% for value, label in source_choices %}
+          <option value="{{ value }}" {% if filters.source == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <label class="inline-flex items-center gap-2 text-sm text-g-muted">
+      <input type="checkbox" name="critical" value="1" {% if filters.critical %}checked{% endif %} class="rounded border-g-600 bg-g-800">
+      {% translate "Critiques seulement" %}
+    </label>
+    <button type="submit" class="rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover">{% translate "Filtrer" %}</button>
+    <a href="?" class="rounded-md px-4 py-2 text-sm font-medium text-g-muted hover:text-g-text">{% translate "Réinitialiser" %}</a>
+  </form>
+
+  {# --- Chronologie (ordre croissant) --- #}
+  {% if event_rows %}
+    <ol class="space-y-2">
+      {% for row in event_rows %}
+        <li class="rounded-md border border-g-700 bg-g-850 p-3 {% if row.presentation.critical %}border-l-4 border-red-500{% endif %}">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span class="font-mono text-xs text-g-faint" title="{{ row.event.occurred_at|date:'d/m/Y H:i:s' }} UTC">{{ row.event.occurred_at|offset:session.started_at }}</span>
+            {% include "components/badge_event.html" with label=row.presentation.label category=row.presentation.category %}
+            <span class="text-g-text">{{ row.presentation.sentence }}</span>
+            {% if row.event.confidence_score != None %}
+              <span class="text-xs text-g-faint">{% widthratio row.event.confidence_score 1 100 %} %</span>
+            {% endif %}
+          </div>
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs text-g-muted hover:text-g-text">{% translate "Détails techniques" %}</summary>
+            <dl class="mt-2 grid gap-1 text-xs text-g-muted sm:grid-cols-2">
+              <div><dt class="inline text-g-faint">event_id :</dt> <dd class="inline font-mono">{{ row.event.event_id }}</dd></div>
+              <div><dt class="inline text-g-faint">source :</dt> <dd class="inline font-mono">{{ row.event.source }}</dd></div>
+              <div><dt class="inline text-g-faint">sdk_version :</dt> <dd class="inline font-mono">{{ row.event.sdk_version|default:"—" }}</dd></div>
+              <div><dt class="inline text-g-faint">integrity_hash :</dt> <dd class="inline font-mono">{{ row.event.integrity_hash|default:"—"|truncatechars:16 }}</dd></div>
+              <div class="sm:col-span-2"><dt class="text-g-faint">user_agent :</dt> <dd class="font-mono break-all">{{ row.event.user_agent|default:"—" }}</dd></div>
+              <div class="sm:col-span-2"><dt class="text-g-faint">metadata :</dt> <dd><pre class="mt-1 overflow-x-auto rounded bg-g-800 p-2 font-mono text-xs text-g-text">{{ row.event.metadata|to_json }}</pre></dd></div>
+            </dl>
+          </details>
+        </li>
+      {% endfor %}
+    </ol>
+    {% include "components/pagination.html" with page_obj=events_page %}
+  {% else %}
+    {% translate "Aucun événement enregistré pour cette session" as no_event_title %}
+    {% include "components/empty_state.html" with title=no_event_title %}
+  {% endif %}
+{% endblock %}

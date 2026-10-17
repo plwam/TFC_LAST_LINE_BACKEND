@@ -1,0 +1,13 @@
+{% load allauth %}
+{# Bouton allauth — variante selon `attrs.tags` (prominent, outline…) (06 §4.2). #}
+{% if "outline" in attrs.tags %}
+  {% with cls="inline-flex w-full items-center justify-center rounded-md border border-g-700 bg-g-850 px-4 py-2 text-sm font-medium text-g-text transition hover:bg-g-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue" %}
+    {% if attrs.href %}<a href="{{ attrs.href }}" class="{{ cls }}">{% slot %}{% endslot %}</a>
+    {% else %}<button type="{{ attrs.type|default:'submit' }}" class="{{ cls }}">{% slot %}{% endslot %}</button>{% endif %}
+  {% endwith %}
+{% else %}
+  {% with cls="inline-flex w-full items-center justify-center rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-g-accentHover focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue focus-visible:ring-offset-2 focus-visible:ring-offset-g-900" %}
+    {% if attrs.href %}<a href="{{ attrs.href }}" class="{{ cls }}">{% slot %}{% endslot %}</a>
+    {% else %}<button type="{{ attrs.type|default:'submit' }}" class="{{ cls }}">{% slot %}{% endslot %}</button>{% endif %}
+  {% endwith %}
+{% endif %}
