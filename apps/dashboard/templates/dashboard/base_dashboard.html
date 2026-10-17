@@ -52,6 +52,7 @@
               <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=overview" {% if tab == 'overview' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Vue d'ensemble" %}</a></li>
               <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=keys" {% if tab == 'keys' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Clés API" %}</a></li>
               <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=sessions" {% if tab == 'sessions' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Sessions" %}</a></li>
+              <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=logs" {% if tab == 'logs' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Journal SDK" %}</a></li>
               <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=integration" {% if tab == 'integration' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Intégration" %}</a></li>
               <li><a href="{% url 'dashboard:project-detail' project.id %}?tab=settings" {% if tab == 'settings' %}aria-current="page" class="block rounded-md px-3 py-1.5 font-medium text-g-blue"{% else %}class="block rounded-md px-3 py-1.5 text-g-muted hover:text-g-text"{% endif %}>{% translate "Paramètres" %}</a></li>
             </ul>
@@ -148,6 +149,21 @@
         <button type="submit" class="block w-full rounded-md px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10">{% translate "Se déconnecter" %}</button>
       </form>
       <button type="button" data-dialog-close class="block w-full rounded-md px-3 py-2 text-left text-sm text-g-muted hover:bg-g-800 hover:text-g-text">{% translate "Fermer" %}</button>
+    </div>
+  </div>
+</dialog>
+
+{# Fenêtre d'alerte générique pour les actions dangereuses (suspendre / désactiver…).
+   Un formulaire portant `data-confirm` l'ouvre au lieu de se soumettre ; la confirmation
+   déclenche la soumission. Le texte est surchargé par `data-confirm-title`/`-message`/`-label`.
+   Purement dissuasif : la validation réelle reste côté serveur. #}
+<dialog id="confirm-action-dialog" class="w-full max-w-md rounded-lg border border-g-700 bg-g-850 p-0 text-g-text backdrop:bg-black/60">
+  <div class="p-6">
+    <h2 class="text-lg font-semibold text-g-text" data-confirm-title>{% translate "Confirmer l'action" %}</h2>
+    <p class="mt-2 text-sm text-g-muted" data-confirm-message>{% translate "Cette action est irréversible. Continuer ?" %}</p>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" data-dialog-close autofocus class="rounded-md border border-g-600 px-4 py-2 text-sm font-medium text-g-blue hover:bg-g-800">{% translate "Annuler" %}</button>
+      <button type="button" data-confirm-accept class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">{% translate "Confirmer" %}</button>
     </div>
   </div>
 </dialog>

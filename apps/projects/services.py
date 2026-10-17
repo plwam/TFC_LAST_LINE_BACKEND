@@ -125,6 +125,49 @@ class ProjectService:
         )
         return project
 
+    @classmethod
+    @transaction.atomic
+    def suspend_project(cls, project: Project, *, actor=None, request=None) -> Project:
+        """Suspend un projet : ses clés HMAC cessent d'être acceptées, réversible (UC-2/UC-12).
+
+        Utilisé par le développeur (mesure sur son propre projet) comme par l'administration.
+        Audit dédié (`suspend_project`) pour distinguer la suspension des autres changements.
+        """
+        return cls._set_status(
+            project, Project.Status.SUSPENDED, AccessLog.Action.SUSPEND_PROJECT, actor, request
+        )
+
+    @classmethod
+    @transaction.atomic
+    def disable_project(cls, project: Project, *, actor=None, request=None) -> Project:
+        """Désactive un projet (mis au repos) : clés refusées, réversible via `reactivate`."""
+        return cls._set_status(
+            project, Project.Status.DISABLED, AccessLog.Action.DISABLE_PROJECT, actor, request
+        )
+
+    @classmethod
+    @transaction.atomic
+    def reactivate_project(cls, project: Project, *, actor=None, request=None) -> Project:
+        """Réactive un projet suspendu/désactivé : ses clés redeviennent valides."""
+        return cls._set_status(
+            project, Project.Status.ACTIVE, AccessLog.Action.REACTIVATE_PROJECT, actor, request
+        )
+
+    @staticmethod
+    def _set_status(project, status, action, actor, request) -> Project:
+        """Applique un nouvel état et journalise l'action (point d'écriture unique)."""
+        project.status = status
+        project.save(update_fields=["status", "updated_at"])
+        AccessLog.record(
+            action=action,
+            actor=actor,
+            developer=project.developer,
+            resource_type="Project",
+            resource_id=str(project.id),
+            request=request,
+        )
+        return project
+
     @staticmethod
     @transaction.atomic
     def regenerate_secret_key(project: Project, *, actor=None, request=None) -> str:

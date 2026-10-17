@@ -1,0 +1,17 @@
+{% load i18n %}
+{% comment %} Badge d'état de fonctionnement du SDK (rubrique « Journal SDK » et Vue d'ensemble).
+   Paramètre : state (online | degraded | offline).
+   Les TROIS variantes sont rendues d'emblée et PILOTÉES PAR `hidden` : dashboard.js bascule
+   l'état en direct (polling) sans reconstruire le badge, et sans dupliquer les classes Tailwind
+   côté JavaScript. {% endcomment %}
+<span data-sdk-status class="inline-flex">
+  <span data-sdk-state="online" class="{% if state != 'online' %}hidden {% endif %}inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+    <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>{% translate "En ligne" %}
+  </span>
+  <span data-sdk-state="degraded" class="{% if state != 'degraded' %}hidden {% endif %}inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+    <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>{% translate "Dégradé" %}
+  </span>
+  <span data-sdk-state="offline" class="{% if state != 'offline' %}hidden {% endif %}inline-flex items-center gap-1.5 rounded-full border border-g-600 bg-g-800 px-2.5 py-1 text-xs font-medium text-g-muted">
+    <span class="h-1.5 w-1.5 rounded-full bg-g-faint"></span>{% translate "Hors ligne" %}
+  </span>
+</span>

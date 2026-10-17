@@ -7,6 +7,7 @@ Ces sérialiseurs valident les DONNÉES ; la signature, elle, est vérifiée en 
 from rest_framework import serializers
 
 from apps.events.models import Event
+from apps.sdklogs.models import SdkLog
 
 
 class SessionCreateSerializer(serializers.Serializer):
@@ -45,6 +46,32 @@ class EventBatchSerializer(serializers.Serializer):
     """Lot d'événements envoyé par le SDK/extension (d'un seul envoi réseau)."""
 
     events = EventIngestSerializer(many=True)
+
+
+class SdkLogIngestSerializer(serializers.Serializer):
+    """Une entrée du journal SDK. `context` n'est pas validé en profondeur (données client)."""
+
+    level = serializers.ChoiceField(choices=SdkLog.Level.choices, default=SdkLog.Level.INFO)
+    kind = serializers.ChoiceField(choices=SdkLog.Kind.choices, default=SdkLog.Kind.LOG)
+    message = serializers.CharField(required=False, allow_blank=True, default="")
+    sdk_version = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
+    context = serializers.JSONField(required=False, default=dict)
+    # Horodatage côté SDK ; par défaut, l'heure de réception serveur.
+    occurred_at = serializers.DateTimeField(required=False)
+
+
+class SdkLogBatchSerializer(serializers.Serializer):
+    """Lot de heartbeat/logs envoyé par le SDK (d'un seul envoi réseau)."""
+
+    # Session facultative : rattache les entrées à une passation précise.
+    session_id = serializers.UUIDField(required=False)
+    logs = SdkLogIngestSerializer(many=True, allow_empty=False)
+
+    def validate_logs(self, value):
+        # Garde-fou : un SDK ne doit pas pouvoir noyer la base en un seul envoi.
+        if len(value) > 200:
+            raise serializers.ValidationError("Un lot ne peut pas dépasser 200 entrées.")
+        return value
 
 
 class EventReadSerializer(serializers.ModelSerializer):

@@ -27,6 +27,7 @@ class HMACAuthenticationScheme(OpenApiAuthenticationExtension):
                 "`X-ExamSDK-Public-Key` (la `public_key` du projet, non secrète) et de la "
                 "valeur `issued_at` (epoch secondes) présente dans le corps ou l'URL. "
                 "Chaîne canonique : `project_id|exam_id|student_id|issued_at` à la création "
-                "d'une session ; `project_id|session_id|issued_at` pour les événements."
+                "d'une session ; `project_id|session_id|issued_at` pour les événements ; "
+                "`project_id|sdk-logs|issued_at` pour le journal du SDK."
             ),
         }

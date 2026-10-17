@@ -11,7 +11,8 @@ Contrat de requête (à confirmer avec `02_SDK.md` §14 — voir avertissement c
     - `X-ExamSDK-Signature`  : HMAC-SHA256 hexadécimal.
   Corps JSON : contient `issued_at` (epoch secondes) et, selon l'endpoint :
     - création de session  → `exam_id`, `student_id`  ⇒ canonique `project_id|exam_id|student_id|issued_at` ;
-    - envoi d'événements   → `session_id`             ⇒ canonique `project_id|session_id|issued_at`.
+    - envoi d'événements   → `session_id`             ⇒ canonique `project_id|session_id|issued_at` ;
+    - journal du SDK       → (endpoint /machine/logs/) ⇒ canonique `project_id|sdk-logs|issued_at`.
 
 AVERTISSEMENT : la chaîne canonique de création de session est explicitement figée par
 `01_BACKEND.md` §4.1. Celle des événements n'est pas spécifiée dans les documents accessibles ;
@@ -76,20 +77,24 @@ class HMACAuthentication(BaseAuthentication):
         if not public_key or not signature:
             return None
 
-        # Un projet archivé est refusé exactement comme un projet inconnu : ses clés ne doivent
-        # plus rien valider (cohérent avec l'archivage décidé pour la « suppression », §17 p.1).
-        project = (
-            Project.objects.filter(public_key=public_key, is_archived=False).first()
-        )
+        # Un projet archivé, suspendu ou désactivé est refusé exactement comme un projet inconnu :
+        # ses clés ne doivent plus rien valider. L'archivage remplace la « suppression » (§17 p.1) ;
+        # la suspension/désactivation est une coupure réversible décidée par le développeur ou
+        # l'administration (message volontairement générique : on ne révèle pas l'état du projet).
+        project = Project.objects.filter(
+            public_key=public_key,
+            is_archived=False,
+            status=Project.Status.ACTIVE,
+        ).first()
         if project is None:
-            raise AuthenticationFailed("Clé publique inconnue ou projet archivé.")
+            raise AuthenticationFailed("Clé publique inconnue ou projet inactif.")
 
         data = self._payload(request)
         issued_at = data.get("issued_at")
         if issued_at is None:
             raise AuthenticationFailed("Champ `issued_at` manquant : requête non signable.")
 
-        message = self._canonical_string(project, data)
+        message = self._canonical_string(request, project, data)
         if message is None:
             raise AuthenticationFailed("Champs requis manquants pour reconstruire la signature.")
 
@@ -109,8 +114,17 @@ class HMACAuthentication(BaseAuthentication):
         return (None, AuthenticatedProject(project))
 
     @staticmethod
-    def _canonical_string(project: Project, data: dict):
-        """Reconstruit la chaîne canonique signée, ou None si les champs requis manquent."""
+    def _canonical_string(request, project: Project, data: dict):
+        """Reconstruit la chaîne canonique signée, ou None si les champs requis manquent.
+
+        L'endpoint est déterminé en premier : le journal SDK a sa propre canonique, car un
+        heartbeat peut être envoyé AVANT l'ouverture d'une session (pas de `session_id`). Sans
+        ce test prioritaire, un lot de logs portant un `session_id` serait signé comme un lot
+        d'événements.
+        """
+        if request.path.rstrip("/").endswith("/machine/logs"):
+            # Journal du SDK : canonique `project_id|sdk-logs|issued_at`.
+            return f"{project.id}|sdk-logs|{data['issued_at']}"
         if data.get("session_id"):
             # Envoi d'événements : canonique `project_id|session_id|issued_at`.
             return f"{project.id}|{data['session_id']}|{data['issued_at']}"

@@ -17,13 +17,28 @@
 {% block page_header %}
   <div class="mb-6 max-w-3xl">
     <h1 class="text-2xl font-medium text-g-text">{% translate "Documentation API" %}</h1>
-    <p class="mt-2 text-sm text-g-muted">
-      {% translate "Référence des endpoints HTTP d'ExamSDK : authentification JWT, gestion des projets et des sessions, API machine signée (HMAC) et API publique. Chaque endpoint est accompagné d'un exemple de requête et de réponse." %}
-    </p>
+    {% if request.user.is_superuser %}
+      <p class="mt-2 text-sm text-g-muted">
+        {% translate "Vue administrateur — aperçu complet de l'API : gestion (projets, sessions), intégration (SDK / LMS) et points publics. Chaque endpoint est accompagné d'un exemple de requête et de réponse." %}
+      </p>
+    {% else %}
+      <p class="mt-2 text-sm text-g-muted">
+        {% translate "Les requêtes que votre plateforme d'examen (LMS ou SDK) envoie à ExamSDK : ouvrir et clôturer une session d'examen, envoyer les événements détectés, puis les relire. Chaque endpoint est accompagné d'un exemple de requête et de réponse, prêt à copier." %}
+      </p>
+    {% endif %}
     <div class="mt-4 flex flex-wrap gap-2 text-xs">
-      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API machine — HMAC</span>
-      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API JWT</span>
-      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API publique</span>
+      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">{% translate "Intégration (SDK / LMS)" %}</span>
+      {% if request.user.is_superuser %}<span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API JWT</span><span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API publique</span>{% endif %}
+    </div>
+    <div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
+      <a href="{% url 'docs:swagger' %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 font-medium text-g-blue hover:text-g-blue/80">
+        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5M16.5 3H21m0 0v4.5M21 3l-9 9"/></svg>
+        {% translate "Interface Swagger" %} <span class="text-g-faint" aria-hidden="true">↗</span>
+      </a>
+      <a href="{% url 'docs:redoc' %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 font-medium text-g-blue hover:text-g-blue/80">
+        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v10.5m0 0 4.5-4.5M12 16.75l-4.5-4.5M4.5 4.5V3h15v1.5M4.5 19.5V21h15v-1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 3h15v18h-15z"/></svg>
+        {% translate "Référence ReDoc" %} <span class="text-g-faint" aria-hidden="true">↗</span>
+      </a>
     </div>
   </div>
 {% endblock %}
@@ -36,6 +51,7 @@
        aria-label="{% translate 'Sommaire de la documentation' %}">
     <p class="text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Sur cette page" %}</p>
 
+    {% if request.user.is_superuser %}
     <p class="mt-4 font-medium text-g-text">{% translate "Authentification" %}</p>
     <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
       <li><a href="#jwt-token" class="block text-g-muted hover:text-g-text">{% translate "Obtenir un jeton" %}</a></li>
@@ -55,31 +71,36 @@
       <li><a href="#sessions-list" class="block text-g-muted hover:text-g-text">{% translate "Lister les sessions" %}</a></li>
       <li><a href="#sessions-detail" class="block text-g-muted hover:text-g-text">{% translate "Détail d'une session" %}</a></li>
     </ul>
+    {% endif %}
 
-    <p class="mt-4 font-medium text-g-text">{% translate "API machine (HMAC)" %}</p>
+    <p class="mt-4 font-medium text-g-text">{% translate "Intégration (SDK / LMS)" %}</p>
     <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
       <li><a href="#machine-signature" class="block text-g-muted hover:text-g-text">{% translate "Signer une requête" %}</a></li>
       <li><a href="#machine-session-create" class="block text-g-muted hover:text-g-text">{% translate "Ouvrir une session" %}</a></li>
       <li><a href="#machine-session-close" class="block text-g-muted hover:text-g-text">{% translate "Clôturer une session" %}</a></li>
       <li><a href="#machine-events-post" class="block text-g-muted hover:text-g-text">{% translate "Envoyer des événements" %}</a></li>
       <li><a href="#machine-events-get" class="block text-g-muted hover:text-g-text">{% translate "Lire les événements" %}</a></li>
+      <li><a href="#machine-logs" class="block text-g-muted hover:text-g-text">{% translate "Journal du SDK (état)" %}</a></li>
     </ul>
 
+    {% if request.user.is_superuser %}
     <p class="mt-4 font-medium text-g-text">{% translate "API publique" %}</p>
     <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
       <li><a href="#public-hosts" class="block text-g-muted hover:text-g-text">{% translate "Hôtes autorisés" %}</a></li>
       <li><a href="#public-health" class="block text-g-muted hover:text-g-text">{% translate "Sonde de disponibilité" %}</a></li>
     </ul>
+    {% endif %}
   </nav>
 
   {# ----- Contenu ----- #}
   <div class="min-w-0 space-y-12">
 
+    {% if request.user.is_superuser %}
     {# ============================ AUTHENTIFICATION ============================ #}
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Authentification (JWT)" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "L'API JWT s'adresse aux clients non-navigateur (mobile, desktop, scripts). L'identifiant est l'email. Le jeton d'accès se présente ensuite dans l'en-tête" %} <code class="rounded bg-g-800 px-1.5 py-0.5 font-mono text-xs text-g-text">Authorization: Bearer &lt;access&gt;</code>.
+        {% translate "Connectez-vous une fois par email + mot de passe pour obtenir un jeton, puis joignez ce jeton à chaque appel. Recommandé pour les clients non-navigateur (mobile, desktop, scripts). Envoyez le jeton dans l'en-tête" %} <code class="rounded bg-g-800 px-1.5 py-0.5 font-mono text-xs text-g-text">Authorization: Bearer &lt;access&gt;</code>.
       </p>
 
       {# --- Obtenir un jeton --- #}
@@ -90,7 +111,7 @@
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Obtenir un jeton JWT" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Authentifie un développeur par email + mot de passe et renvoie un couple de jetons : access (courte durée) et refresh (longue durée). En cas d'échec, le message est toujours identique afin de ne pas révéler si un compte existe." %}
+          {% translate "Envoyez votre email et votre mot de passe : vous recevez un jeton d'accès (access, courte durée) pour signer vos appels, et un jeton de rafraîchissement (refresh, longue durée) pour en obtenir de nouveaux sans vous reconnecter." %}
         </p>
         <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Requête" %}</p>
         {% code_block "doc-jwt-token-curl" "bash" "cURL" %}
@@ -115,7 +136,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Rafraîchir un jeton d'accès" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Échange un jeton refresh encore valide contre un nouveau jeton access, sans redemander le mot de passe. Un refresh expiré oblige à se reconnecter." %}
+          {% translate "Quand votre jeton access expire, échangez votre jeton de rafraîchissement contre un nouveau access — sans redemander le mot de passe. Si le refresh a lui aussi expiré, reconnectez-vous." %}
         </p>
         <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Requête" %}</p>
         {% code_block "doc-jwt-refresh-curl" "bash" "cURL" %}
@@ -136,7 +157,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/refresh/ \
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Projets" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "CRUD des projets du développeur authentifié. La clé secrète n'apparaît JAMAIS dans ces réponses : seule sa forme masquée est exposée. Un projet d'un autre développeur renvoie 404 (jamais 403)." %}
+        {% translate "Créez et gérez vos projets ainsi que leurs clés API. La clé secrète n'est jamais renvoyée par ces appels (seule sa forme masquée l'est) : pour l'obtenir, utilisez l'action de régénération. Vous n'avez accès qu'à vos propres projets ; tout autre identifiant renvoie 404." %}
       </p>
 
       {# --- Lister --- #}
@@ -146,7 +167,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/refresh/ \
           <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses projets" %}</h3>
-        <p class="mt-2 max-w-3xl text-sm text-g-muted">{% translate "Renvoie les projets non archivés du développeur, du plus récent au plus ancien." %}</p>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">{% translate "Récupérez vos projets, du plus récent au plus ancien. Les projets archivés n'apparaissent pas dans cette liste." %}</p>
         {% code_block "doc-projects-list-curl" "bash" "cURL" %}
 curl https://api.examsdk.example/api/v1/projects/ \
   -H "Authorization: Bearer $ACCESS_TOKEN"
@@ -160,6 +181,7 @@ curl https://api.examsdk.example/api/v1/projects/ \
     "site_url": "https://examens.univ-a.edu",
     "public_key": "pk_live_9f2c7a1b4e...",
     "masked_secret": "sk_live_••••a1b2",
+    "status": "active",
     "is_archived": false,
     "created_at": "2024-10-15T12:20:00Z",
     "updated_at": "2024-10-15T12:20:00Z"
@@ -176,7 +198,7 @@ curl https://api.examsdk.example/api/v1/projects/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Créer un projet" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Crée un projet et lui génère immédiatement un couple de clés (publique + secrète). La clé secrète n'est jamais renvoyée ici : utilisez l'action de régénération pour l'obtenir une seule fois." %}
+          {% translate "Créez un projet : un couple de clés vous est attribué automatiquement. La clé secrète n'est renvoyée par aucun de ces appels — récupérez-la via l'action de régénération." %}
         </p>
         {% code_block "doc-projects-create-curl" "bash" "cURL" %}
 curl -X POST https://api.examsdk.example/api/v1/projects/ \
@@ -192,6 +214,7 @@ curl -X POST https://api.examsdk.example/api/v1/projects/ \
   "site_url": "https://examens.univ-a.edu",
   "public_key": "pk_live_9f2c7a1b4e...",
   "masked_secret": "sk_live_••••a1b2",
+  "status": "active",
   "is_archived": false
 }
         {% endcode_block %}
@@ -208,7 +231,7 @@ curl -X POST https://api.examsdk.example/api/v1/projects/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail, modification et archivage" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "GET renvoie un projet. PUT/PATCH modifient name, description et site_url (les clés et l'archivage ne sont jamais modifiables). DELETE archive le projet (pas de suppression physique) : il disparaît des listes et ses clés cessent d'être acceptées, mais ses sessions et événements sont conservés (une preuve ne se supprime pas)." %}
+          {% translate "Consultez la fiche d'un projet (GET), modifiez son nom, sa description ou son site (PUT/PATCH), ou archivez-le (DELETE). L'archivage retire le projet de vos listes et désactive ses clés, sans effacer les sessions et les événements déjà enregistrés." %}
         </p>
         {% code_block "doc-projects-detail-curl" "bash" "cURL" %}
 # Détail
@@ -235,7 +258,7 @@ curl -X DELETE https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Régénérer la clé secrète" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Génère un nouveau couple de clés. L'ancienne clé secrète devient immédiatement invalide. La nouvelle clé est renvoyée UNE SEULE FOIS, ici, et la réponse n'est pas mise en cache." %}
+          {% translate "Générez un nouveau couple de clés : l'ancienne est immédiatement désactivée. La nouvelle clé secrète n'est affichée qu'ici, une seule fois — conservez-la en sécurité." %}
         </p>
         {% code_block "doc-projects-regenerate-curl" "bash" "cURL" %}
 curl -X POST https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../regenerate-secret/ \
@@ -254,7 +277,7 @@ curl -X POST https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../regenerate
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Sessions" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "Consultation en lecture seule des sessions d'examen du développeur, tous projets confondus. Le risk_score est un indicateur d'aide à la décision, pas une preuve de fraude." %}
+        {% translate "Consultez en lecture seule les sessions d'examen de vos projets, tous projets confondus. Le risk_score est un indice d'aide à la décision, pas une preuve de fraude." %}
       </p>
 
       <div id="sessions-list" class="scroll-mt-20 border-t border-g-800 pt-8">
@@ -263,6 +286,9 @@ curl -X POST https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../regenerate
           <code class="font-mono text-sm text-g-text break-all">/api/v1/sessions/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses sessions" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Récupérez vos sessions d'examen, de la plus récente à la plus ancienne, avec leur statut, leur durée et leur risk_score." %}
+        </p>
         {% code_block "doc-sessions-list-curl" "bash" "cURL" %}
 curl https://api.examsdk.example/api/v1/sessions/ \
   -H "Authorization: Bearer $ACCESS_TOKEN"
@@ -291,7 +317,7 @@ curl https://api.examsdk.example/api/v1/sessions/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail d'une session" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Renvoie une session précise (status : active / closed / invalid). Une session d'un autre développeur renvoie 404. Les événements ne sont pas exposés par cette surface : ils se consultent via l'API machine HMAC ou le tableau de bord." %}
+          {% translate "Consultez une session précise : statut (active, closed ou invalid), durée, risk_score. Les événements détectés pendant la session se consultent via l'endpoint d'intégration ou dans le tableau de bord." %}
         </p>
         {% code_block "doc-sessions-detail-curl" "bash" "cURL" %}
 curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
@@ -299,38 +325,43 @@ curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
         {% endcode_block %}
       </div>
     </section>
+    {% endif %}
 
-    {# ============================= API MACHINE ============================== #}
+    {# ============================= INTÉGRATION ============================== #}
     <section>
-      <h2 class="text-xl font-medium text-g-text">{% translate "API machine (HMAC)" %}</h2>
+      <h2 class="text-xl font-medium text-g-text">{% translate "Intégration (SDK / LMS)" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "Surface Zero Trust consommée par le SDK et un éventuel LMS : aucune session Django, aucun JWT. Le serveur signe une chaîne canonique avec sa clé secrète. ExamSDK ne fait confiance à rien d'autre que cette signature." %}
+        {% translate "Ces endpoints permettent à votre plateforme d'examen — ou au SDK — d'ouvrir et de clôturer les sessions d'examen et de transmettre les événements détectés pendant l'épreuve. Chaque requête est signée avec la clé secrète de votre projet : c'est ce qui permet à ExamSDK de vérifier qu'elle vient bien de vous, sans mot de passe ni session à gérer." %}
       </p>
 
       {# --- Signer une requête --- #}
       <div id="machine-signature" class="scroll-mt-20 border-t border-g-800 pt-8">
         <h3 class="text-base font-medium text-g-text">{% translate "Signer une requête" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Chaque requête porte deux en-têtes :" %}
+          {% translate "Ajoutez deux en-têtes à chaque appel :" %}
         </p>
         <ul class="mt-2 max-w-3xl space-y-1 text-sm text-g-muted">
-          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Public-Key</code> — <span>{% translate "la clé publique du projet (jamais secrète)." %}</span></li>
-          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Signature</code> — <span>{% translate "le HMAC-SHA256 hexadécimal de la chaîne canonique, calculé avec la clé secrète." %}</span></li>
+          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Public-Key</code> — <span>{% translate "la clé publique de votre projet, qui identifie l'appel." %}</span></li>
+          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Signature</code> — <span>{% translate "la signature HMAC-SHA256 (en hexadécimal) calculée avec votre clé secrète." %}</span></li>
         </ul>
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "La signature se calcule sur les données envoyées. Ajoutez à ces données un horodatage" %} <code class="font-mono text-xs text-g-text">issued_at</code> {% translate "(en secondes) proche de l'heure réelle :" %}
+        </p>
         <div class="mt-3 max-w-3xl overflow-hidden rounded-md border border-g-700 bg-g-850 text-xs text-g-muted">
           <table class="w-full text-left">
             <thead class="border-b border-g-700 text-[11px] uppercase tracking-wide text-g-faint">
-              <tr><th class="px-3 py-2">{% translate "Endpoint" %}</th><th class="px-3 py-2">{% translate "Chaîne canonique" %}</th></tr>
+              <tr><th class="px-3 py-2">{% translate "Endpoint" %}</th><th class="px-3 py-2">{% translate "Données à signer" %}</th></tr>
             </thead>
             <tbody class="font-mono">
               <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /</td><td class="px-3 py-2">project_id|exam_id|student_id|issued_at</td></tr>
               <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /close/</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
-              <tr><td class="px-3 py-2">events /</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2">events /</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
+              <tr><td class="px-3 py-2">logs /</td><td class="px-3 py-2">project_id|sdk-logs|issued_at</td></tr>
             </tbody>
           </table>
         </div>
         <p class="mt-2 max-w-3xl text-xs text-g-faint">
-          {% translate "issued_at est un horodatage epoch (secondes) ; il doit être frais (fenêtre de tolérance serveur). Pour les appels GET, les champs signés arrivent par les query params." %}
+          {% translate "Sur les appels GET (sans corps), placez les données à signer dans l'URL." %}
         </p>
         <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Signer en Python" %}</p>
         {% code_block "doc-machine-sign-python" "python" "sign.py" %}
@@ -358,7 +389,7 @@ signature = sign(canonical)
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Ouvrir une session d'examen" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Ouvre une session pour un couple (examen, étudiant) et renvoie son identifiant. L'appel est idempotent : si une session ACTIVE identique existe déjà, elle est renvoyée telle quelle (200) au lieu d'en créer une seconde (201)." %}
+          {% translate "Appelez cet endpoint au démarrage de l'épreuve d'un étudiant : il ouvre la session de surveillance et vous renvoie son identifiant, à réutiliser pour envoyer les événements. Si le même appel est rejoué (rechargement de page, coupure réseau), la session déjà ouverte vous est renvoyée au lieu d'en créer une seconde : vous pouvez donc l'appeler sans risque de doublon." %}
         </p>
         {% code_block "doc-machine-session-create-curl" "bash" "cURL" %}
 curl -X POST https://api.examsdk.example/api/v1/machine/sessions/ \
@@ -385,7 +416,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/sessions/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Clôturer une session" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Par défaut la session devient closed (Terminée) ; avec invalid: true elle devient invalid (Invalide). L'horodatage de fin n'est écrit qu'une fois. Le corps doit porter issued_at et session_id afin que la signature puisse être reconstruite." %}
+          {% translate "Appelez cet endpoint quand l'épreuve est terminée : la session passe en « Terminée » (closed). Si l'épreuve doit être invalidée (incident, triche confirmée), envoyez invalid: true pour la marquer « Invalide ». La date de fin n'est enregistrée qu'une seule fois, même en cas de renvoi." %}
         </p>
         {% code_block "doc-machine-session-close-curl" "bash" "cURL" %}
 curl -X POST https://api.examsdk.example/api/v1/machine/sessions/6f1c0f2a-.../close/ \
@@ -411,7 +442,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/sessions/6f1c0f2a-.../cl
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Envoyer un lot d'événements" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Le SDK regroupe plusieurs détections dans un même envoi réseau. L'ingestion est idempotente par event_id : un renvoi du même lot est compté dans duplicates au lieu de créer des doublons. La réponse est 202." %}
+          {% translate "Transmettez ici les événements détectés pendant l'épreuve (perte de focus, changement d'onglet, etc.). Vous pouvez en envoyer plusieurs en un seul appel. Chaque événement porte un identifiant unique (event_id) : si vous renvoyez le même lot après une coupure réseau, les doublons sont ignorés et comptés à part (duplicates) — aucun événement n'est enregistré deux fois." %}
         </p>
         {% code_block "doc-machine-events-post-curl" "bash" "cURL" %}
 curl -X POST https://api.examsdk.example/api/v1/machine/events/ \
@@ -444,7 +475,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/events/ \
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lire les événements d'un projet" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Renvoie les événements du projet signé, du plus récent au plus ancien (500 au maximum). Filtres facultatifs : exam_id, student_id, type. Comme il n'y a pas de corps, issued_at et session_id sont passés dans la requête pour être signés." %}
+          {% translate "Récupérez les événements enregistrés pour votre projet, du plus récent au plus ancien (500 au maximum). Vous pouvez les filtrer par examen (exam_id), par étudiant (student_id) ou par type d'événement. Comme un appel de lecture n'a pas de corps, placez les données à signer (session_id, issued_at) dans l'URL." %}
         </p>
         {% code_block "doc-machine-events-get-curl" "bash" "cURL" %}
 curl "https://api.examsdk.example/api/v1/machine/events/?session_id=6f1c0f2a-...&exam_id=MATH-2024-S1&type=FOCUS_LOST&issued_at=1729000200" \
@@ -468,13 +499,48 @@ curl "https://api.examsdk.example/api/v1/machine/events/?session_id=6f1c0f2a-...
 ]
         {% endcode_block %}
       </div>
+
+      {# --- Journal du SDK (heartbeat + logs) --- #}
+      <div id="machine-logs" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
+          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/logs/</code>
+        </div>
+        <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Envoyer le journal de fonctionnement du SDK" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Signalez régulièrement que votre SDK est vivant (kind: heartbeat) et transmettez ses messages de fonctionnement (kind: log) avec un niveau : debug, info, warning ou error. Ces entrées alimentent l'onglet « Journal SDK » de votre projet : dès qu'un signal de vie est reçu, l'état affiché passe à « En ligne » ; une erreur récente le fait passer à « Dégradé » ; l'absence de signal pendant la fenêtre de surveillance l'affiche « Hors ligne ». Vous pouvez rattacher un lot à une session en fournissant un session_id (facultatif)." %}
+        </p>
+        {% code_block "doc-machine-logs-curl" "bash" "cURL" %}
+curl -X POST https://api.examsdk.example/api/v1/machine/logs/ \
+  -H "X-ExamSDK-Public-Key: pk_live_9f2c7a1b4e..." \
+  -H "X-ExamSDK-Signature: <hmac-sha256-hex>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "issued_at": 1729000200,
+        "session_id": "6f1c0f2a-3b6e-4c1a-9f2e-1a2b3c4d5e6f",
+        "logs": [
+          {"kind": "heartbeat", "level": "info", "sdk_version": "1.2.0", "occurred_at": "2024-10-15T12:30:00Z"},
+          {"kind": "log", "level": "error", "message": "Caméra indisponible (NotReadableError).", "context": {"device": "webcam"}, "occurred_at": "2024-10-15T12:30:02Z"}
+        ]
+      }'
+        {% endcode_block %}
+        <p class="mt-4 text-xs font-medium uppercase tracking-wide text-g-faint">{% translate "Réponse" %} <span class="text-green-400">202</span></p>
+        {% code_block "doc-machine-logs-json" "json" "JSON" %}
+{
+  "accepted": 2
+}
+        {% endcode_block %}
+      </div>
     </section>
 
     {# ============================= API PUBLIQUE ============================= #}
+    {% comment %} Surface d'exploitation (extension du propriétaire / monitoring) : non exposée
+       aux développeurs, qui n'ont rien à en faire. {% endcomment %}
+    {% if request.user.is_superuser %}
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "API publique" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "Endpoints sans authentification, destinés à l'extension navigateur et au monitoring." %}
+        {% translate "Points d'entrée publics, sans authentification, utilisés par l'extension navigateur et la supervision." %}
       </p>
 
       <div id="public-hosts" class="scroll-mt-20 border-t border-g-800 pt-8">
@@ -484,7 +550,7 @@ curl "https://api.examsdk.example/api/v1/machine/events/?session_id=6f1c0f2a-...
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Hôtes autorisés" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Liste des noms d'hôtes sur lesquels l'extension doit s'activer, dérivée des projets non archivés. Seuls les noms d'hôtes sont exposés. Réponse mise en cache quelques minutes." %}
+          {% translate "Récupérez la liste des domaines sur lesquels l'extension doit s'activer. Seuls les noms d'hôtes sont renvoyés, jamais les clés ni les identifiants." %}
         </p>
         {% code_block "doc-public-hosts-curl" "bash" "cURL" %}
 curl https://api.examsdk.example/public/registered-hosts/
@@ -504,7 +570,7 @@ curl https://api.examsdk.example/public/registered-hosts/
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Sonde de disponibilité" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
-          {% translate "Health check utilisé par la supervision. Il ne touche pas la base : il répond dès que le processus web est vivant. Le même contrôle est exposé à la racine /health/." %}
+          {% translate "Vérifiez que le service est disponible. Utilisé par la supervision pour détecter une indisponibilité." %}
         </p>
         {% code_block "doc-public-health-json" "json" "JSON" %}
 {
@@ -513,6 +579,7 @@ curl https://api.examsdk.example/public/registered-hosts/
         {% endcode_block %}
       </div>
     </section>
+    {% endif %}
 
   </div>
 </div>

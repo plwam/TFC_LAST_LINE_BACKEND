@@ -22,8 +22,10 @@
       <div class="flex flex-wrap items-center gap-2">
         {% translate "Modifier" as edit_label %}
         {% translate "Supprimer" as delete_label %}
+        {% translate "Supprimer ce projet ?" as delete_confirm_title %}
+        {% translate "Vous allez être redirigé vers une page où vous devrez saisir le nom du projet. Ses clés cesseront de fonctionner et les sessions ne seront plus surveillées." as delete_confirm_msg %}
         {% include "components/button.html" with label=edit_label href=edit_url variant="secondary" %}
-        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" %}
+        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" confirm_title=delete_confirm_title confirm_message=delete_confirm_msg %}
       </div>
     {% endif %}
   </div>
@@ -34,6 +36,7 @@
       <li><a href="?tab=overview" {% if tab == 'overview' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Vue d'ensemble" %}</a></li>
       <li><a href="?tab=keys" {% if tab == 'keys' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Clés API" %}</a></li>
       <li><a href="?tab=sessions" {% if tab == 'sessions' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Sessions" %}</a></li>
+      <li><a href="?tab=logs" {% if tab == 'logs' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Journal SDK" %}</a></li>
       <li><a href="?tab=integration" {% if tab == 'integration' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Intégration" %}</a></li>
       <li><a href="?tab=settings" {% if tab == 'settings' %}aria-current="page" class="inline-block whitespace-nowrap border-b-2 border-g-blue px-4 py-2 font-medium text-g-blue"{% else %}class="inline-block whitespace-nowrap border-b-2 border-transparent px-4 py-2 text-g-muted hover:text-g-text"{% endif %}>{% translate "Paramètres" %}</a></li>
     </ul>
@@ -48,6 +51,8 @@
       {% include "dashboard/project_tabs/_keys.html" %}
     {% elif tab == 'sessions' %}
       {% include "dashboard/project_tabs/_sessions.html" %}
+    {% elif tab == 'logs' %}
+      {% include "dashboard/project_tabs/_logs.html" %}
     {% elif tab == 'integration' %}
       {% include "dashboard/project_tabs/_integration.html" %}
     {% elif tab == 'settings' %}

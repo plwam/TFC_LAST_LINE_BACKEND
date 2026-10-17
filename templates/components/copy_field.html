@@ -1,15 +1,23 @@
 {% load i18n %}
 {% comment %} Champ copiable : valeur en lecture seule + bouton « Copier » (06_FRONTEND_GUIDE.md §4.2).
    Paramètres : id (obligatoire, unique), label, value.
-   Le retour visuel « Copié ✓ » est annoncé via aria-live par dashboard.js. {% endcomment %}
+   Le bouton affiche une icône ; au clic réussi, dashboard.js bascule l'icône en coche, teinte le
+   bouton en vert et remplace le libellé par « Copié » (retour visuel + annonce aria-live). {% endcomment %}
 <div class="copy-field">
   {% if label %}<label for="{{ id }}" class="block text-sm font-medium text-g-muted">{{ label }}</label>{% endif %}
   <div class="mt-1 flex flex-wrap items-stretch gap-2">
     <input id="{{ id }}" type="text" readonly value="{{ value }}"
            class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 font-mono text-sm text-g-text">
     <button type="button" data-copy-target="{{ id }}"
-            class="shrink-0 rounded-md border border-g-600 px-3 py-2 text-sm font-medium text-g-blue hover:bg-g-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue">
-      {% translate "Copier" %}
+            class="shrink-0 inline-flex items-center gap-2 rounded-md border border-g-600 px-3 py-2 text-sm font-medium text-g-blue hover:bg-g-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue">
+      <svg data-copy-icon class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="9" y="9" width="11" height="11" rx="2"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15V5a2 2 0 0 1 2-2h10"/>
+      </svg>
+      <svg data-copy-check class="hidden h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/>
+      </svg>
+      <span data-copy-label>{% translate "Copier" %}</span>
     </button>
   </div>
   <span class="sr-only" aria-live="polite" data-copy-status></span>

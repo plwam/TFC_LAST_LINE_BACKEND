@@ -1,0 +1,13 @@
+{% load i18n %}
+{% comment %} Badge du niveau d'une entrée du journal SDK (rubrique « Journal SDK »).
+   Paramètre : level (debug | info | warning | error).
+   Thème sombre : fond translucide + anneau intérieur, hiérarchie de couleur par gravité. {% endcomment %}
+{% if level == 'error' %}
+  <span class="inline-flex items-center rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-300 ring-1 ring-inset ring-red-500/30">{% translate "Erreur" %}</span>
+{% elif level == 'warning' %}
+  <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300 ring-1 ring-inset ring-amber-500/30">{% translate "Avertissement" %}</span>
+{% elif level == 'debug' %}
+  <span class="inline-flex items-center rounded-full bg-slate-500/15 px-2.5 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-inset ring-slate-500/30">{% translate "Débogage" %}</span>
+{% else %}
+  <span class="inline-flex items-center rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-300 ring-1 ring-inset ring-blue-500/30">{% translate "Information" %}</span>
+{% endif %}

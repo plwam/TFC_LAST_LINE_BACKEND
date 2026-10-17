@@ -11,6 +11,7 @@ from apps.audit.models import AccessLog
 from apps.developers.models import Developer
 from apps.events.admin import EventAdmin
 from apps.events.models import Event
+from apps.projects.models import Project
 
 pytestmark = pytest.mark.django_db
 
@@ -75,6 +76,24 @@ def test_developer_admin_suspend_action(client, staff, make_developer):
     dev.refresh_from_db()
     assert dev.status == Developer.Status.SUSPENDED
     assert AccessLog.objects.filter(action=AccessLog.Action.SUSPEND_DEVELOPER).count() == 1
+
+
+def test_project_admin_exposes_status():
+    project_admin = admin.site._registry[Project]
+    assert "status" in project_admin.list_display
+    assert "status" in project_admin.list_filter
+
+
+def test_project_admin_suspend_action_audits(client, staff, project):
+    client.force_login(staff)
+    response = client.post(
+        reverse("admin:projects_project_changelist"),
+        {"action": "suspend_selected", "_selected_action": [str(project.pk)], "index": "0"},
+    )
+    assert response.status_code == 302
+    project.refresh_from_db()
+    assert project.status == Project.Status.SUSPENDED
+    assert AccessLog.objects.filter(action=AccessLog.Action.SUSPEND_PROJECT).count() == 1
 
 
 def test_admin_developer_list_shows_email(client, staff, make_developer):

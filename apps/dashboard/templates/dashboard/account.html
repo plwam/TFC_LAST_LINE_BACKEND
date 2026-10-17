@@ -49,7 +49,9 @@
       <p class="mt-2 text-sm text-red-200">{% translate "Désactiver mon compte. Vos projets seront archivés." %}</p>
       <div class="mt-4">
         {% translate "Supprimer mon compte" as delete_label %}
-        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" %}
+        {% translate "Supprimer mon compte ?" as delete_confirm_title %}
+        {% translate "Votre compte sera désactivé et vos projets archivés. Vous serez redirigé vers une page de confirmation." as delete_confirm_msg %}
+        {% include "components/button.html" with label=delete_label href=delete_url variant="danger" confirm_title=delete_confirm_title confirm_message=delete_confirm_msg %}
       </div>
     </div>
   </div>

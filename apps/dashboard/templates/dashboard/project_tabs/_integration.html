@@ -53,6 +53,20 @@ signature = hmac.new(SECRET_KEY.encode(), message.encode(), hashlib.sha256).hexd
     <p class="mt-2 text-sm text-g-muted">{% translate "Expliquez-leur d'installer l'extension, d'autoriser la caméra et le micro, et précisez qu'aucune image ni audio n'est transmis." %}</p>
   </section>
 
+  {# --- Étape 5 : journal & état du SDK --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 5 — Envoyer le journal du SDK" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">
+      {% translate "Faites remonter l'état de fonctionnement de votre SDK : un signal de vie (heartbeat) à intervalle régulier et, le cas échéant, des messages d'erreur. Vous suivez alors l'état de votre SDK — en ligne, dégradé ou hors ligne — dans l'onglet « Journal SDK ». L'appel se signe sur la chaîne canonique project_id|sdk-logs|issued_at." %}
+    </p>
+    {% code_block "snippet-logs" "javascript" "sdk-logs.js" %}ExamSDK.sendLogs([
+  { kind: "heartbeat", level: "info", sdkVersion: ExamSDK.version },
+]); // toutes les 30 à 60 s (jamais au-delà de la fenêtre de surveillance){% endcode_block %}
+    <p class="mt-2 text-xs text-g-faint">
+      {% translate "La clé secrète ne doit jamais être exposée à la page d'examen : faites signer l'appel par votre serveur." %}
+    </p>
+  </section>
+
   {# --- Liens + avertissement --- #}
   <a href="{% url 'dashboard:docs' %}" class="inline-flex items-center gap-2 text-sm font-medium text-g-blue hover:text-g-blue/80">
     <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25M6.75 17.25 1.5 12l5.25-5.25M14.25 3.75l-4.5 16.5"/></svg>

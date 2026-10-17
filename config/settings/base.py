@@ -67,6 +67,7 @@ LOCAL_APPS = [
     "apps.projects",       # Project, clés API, ProjectService
     "apps.sessions",       # ExamSession (app_label « examsessions », cf. apps/sessions/apps.py)
     "apps.events",         # Event, EventType, immuabilité
+    "apps.sdklogs",        # SdkLog : journal de fonctionnement / heartbeat du SDK
     "apps.dashboard",      # vues templates du tableau de bord
     "apps.api",            # API JWT (futurs clients mobile/desktop)
     "apps.machine_api",    # API HMAC (SDK / LMS)
@@ -262,6 +263,20 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Accès protégé : le schéma OpenAPI et les interfaces Swagger/ReDoc ne sont visibles que par
+    # un utilisateur CONNECTÉ (développeur ou superutilisateur). L'authentification de session est
+    # activée ici car l'authentification DRF par défaut est le JWT seul (inutilisable dans un
+    # navigateur). Les vues sont en plus décorées d'un `login_required` (docs_urls.py) pour
+    # rediriger proprement les anonymes vers la connexion.
+    "SERVE_AUTHENTICATION": ["rest_framework.authentication.SessionAuthentication"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
+    # Versions ÉPINGLÉES (même principe que Tailwind, cf. templates/base.html §2.3) : « @latest »
+    # a déjà cassé ReDoc — la v3.0.1 a retiré l'élément `<redoc spec-url>` utilisé par
+    # drf-spectacular, ce qui laissait une page blanche. On fige une version 2.x fonctionnelle et
+    # un Swagger UI stable, pour qu'aucune montée de version silencieuse ne casse la doc.
+    "SWAGGER_UI_DIST": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3",
+    "SWAGGER_UI_FAVICON_HREF": "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3/favicon-32x32.png",
+    "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.5.4",
     # Regroupement des endpoints par domaine dans Swagger/ReDoc.
     "TAGS": [
         {"name": "Authentification", "description": "Obtention / rafraîchissement des jetons JWT développeur."},
@@ -294,6 +309,11 @@ FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
 # URL du CDN où est servi le SDK, injectée dans l'onglet « Intégration » (§8.6.4). Jamais
 # codée en dur dans les templates.
 SDK_CDN_URL = env("SDK_CDN_URL", default="https://cdn.examsdk.local/sdk/v1/examsdk.js")
+
+# Fenêtre (secondes) de fraîcheur du dernier heartbeat pour considérer un SDK « en ligne » (
+# rubrique « Journal SDK »). Un SDK silencieux au-delà de cette durée est affiché « hors ligne ».
+# Cadence de heartbeat annoncée au SDK : 2 à 3 fois plus courte que cette fenêtre.
+SDK_HEARTBEAT_WINDOW_SECONDS = env.int("SDK_HEARTBEAT_WINDOW_SECONDS", default=120)
 
 # ---------------------------------------------------------------------------
 # Internationalisation — interface en français, horodatages en UTC (06 §17 points 3-4)

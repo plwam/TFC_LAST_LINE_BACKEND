@@ -92,6 +92,38 @@ def make_event(db):
     return _make
 
 
+@pytest.fixture
+def make_sdk_log(db):
+    """Fabrique une entrée du journal SDK (`SdkLog`) — utilisée par les tests « Journal SDK ».
+
+    `received_at` étant `auto_now_add`, on le vieillit APRÈS création via `queryset.update`
+    (une écriture de queryset, pas une modification du modèle : le garde-fou d'écriture seule de
+    `SdkLog.save` reste intact).
+    """
+
+    def _make(project, *, level="info", kind="log", message="", sdk_version="", context=None,
+              session=None, occurred_at=None, received_at=None):
+        from apps.sdklogs.models import SdkLog
+
+        log = SdkLog(
+            project=project,
+            session=session,
+            level=level,
+            kind=kind,
+            message=message,
+            sdk_version=sdk_version,
+            context=context or {},
+            occurred_at=occurred_at or timezone.now(),
+        )
+        log.save()
+        if received_at is not None:
+            SdkLog.objects.filter(pk=log.pk).update(received_at=received_at)
+            log.refresh_from_db()
+        return log
+
+    return _make
+
+
 # ---------------------------------------------------------------------------
 # Signature HMAC de l'API machine
 # ---------------------------------------------------------------------------

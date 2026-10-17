@@ -12,8 +12,20 @@ urlpatterns = [
     path("projects/", views.ProjectListView.as_view(), name="project-list"),
     path("projects/new/", views.ProjectCreateView.as_view(), name="project-create"),
     path("projects/<uuid:pk>/", views.ProjectDetailView.as_view(), name="project-detail"),
+    path(
+        "projects/<uuid:pk>/logs/feed/",
+        views.ProjectLogsFeedView.as_view(),
+        name="project-logs-feed",
+    ),
     path("projects/<uuid:pk>/edit/", views.ProjectEditView.as_view(), name="project-edit"),
     path("projects/<uuid:pk>/delete/", views.ProjectDeleteView.as_view(), name="project-delete"),
+    path("projects/<uuid:pk>/suspend/", views.ProjectSuspendView.as_view(), name="project-suspend"),
+    path("projects/<uuid:pk>/disable/", views.ProjectDisableView.as_view(), name="project-disable"),
+    path(
+        "projects/<uuid:pk>/reactivate/",
+        views.ProjectReactivateView.as_view(),
+        name="project-reactivate",
+    ),
     path(
         "projects/<uuid:pk>/reveal-secret/",
         views.ProjectRevealSecretView.as_view(),

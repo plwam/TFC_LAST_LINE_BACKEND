@@ -21,7 +21,10 @@ Exemple complet :
                                  "vertical 5°).", critical=False)
 """
 
+import json
 from dataclasses import dataclass
+
+from django.utils import timezone
 
 from apps.events.catalog import CRITICAL_TYPES
 from apps.events.models import Event
@@ -287,3 +290,72 @@ def present_event(event) -> EventPresentation:
         sentence=sentence_fn(event.metadata or {}),
         critical=event.type in CRITICAL_TYPES,
     )
+
+
+# ---------------------------------------------------------------------------
+# Journal SDK (onglet « Journal SDK ») — 06 §8.6
+# ---------------------------------------------------------------------------
+# Libellés lisibles. Comme pour les événements, on ne renvoie QUE du texte brut (les `context`
+# proviennent du SDK et ne sont jamais injectés avec `|safe`).
+
+SDK_STATE_LABELS = {
+    "online": "En ligne",
+    "degraded": "Dégradé",
+    "offline": "Hors ligne",
+}
+
+LOG_LEVEL_LABELS = {
+    "debug": "Débogage",
+    "info": "Information",
+    "warning": "Avertissement",
+    "error": "Erreur",
+}
+
+LOG_KIND_LABELS = {
+    "heartbeat": "Signal de vie",
+    "log": "Journal",
+}
+
+
+def _fmt_datetime(value) -> str:
+    """Formate un horodatage en UTC (« 15/10/2024 12:30:00 ») ; chaîne vide si absent."""
+    if not value:
+        return ""
+    return timezone.localtime(value).strftime("%d/%m/%Y %H:%M:%S")
+
+
+def sdk_status_row(status) -> dict:
+    """Convertit un `apps.sdklogs.status.SdkStatus` en dict prêt à afficher / sérialiser."""
+    return {
+        "state": status.state,
+        "label": SDK_STATE_LABELS.get(status.state, status.state),
+        "last_heartbeat_display": _fmt_datetime(status.last_heartbeat),
+        "last_seen_display": _fmt_datetime(status.last_seen),
+        "recent_errors": status.recent_errors,
+    }
+
+
+def log_row(log) -> dict:
+    """Vue affichable/sérialisable d'une entrée du journal SDK.
+
+    Utilisée à la fois par le template (rendu serveur) et par le flux JSON (temps réel), pour
+    garantir que les deux présentent EXACTEMENT les mêmes champs.
+    """
+    context = log.context if isinstance(log.context, dict) else {}
+    session = log.session
+    return {
+        "id": str(log.id),
+        "level": log.level,
+        "level_label": LOG_LEVEL_LABELS.get(log.level, log.level),
+        "kind": log.kind,
+        "kind_label": LOG_KIND_LABELS.get(log.kind, log.kind),
+        "message": log.message or "",
+        "sdk_version": log.sdk_version or "",
+        "has_context": bool(context),
+        "context_json": (
+            json.dumps(context, ensure_ascii=False, indent=2, default=str) if context else ""
+        ),
+        "session_label": f"{session.exam_id} / {session.student_id}" if session else "",
+        "received_at": log.received_at.isoformat() if log.received_at else "",
+        "received_display": _fmt_datetime(log.received_at),
+    }

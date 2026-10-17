@@ -10,4 +10,5 @@ urlpatterns = [
     path("sessions/", views.MachineSessionCreateView.as_view(), name="session-create"),
     path("sessions/<uuid:pk>/close/", views.MachineSessionCloseView.as_view(), name="session-close"),
     path("events/", views.MachineEventsView.as_view(), name="events"),
+    path("logs/", views.MachineLogsView.as_view(), name="logs"),
 ]

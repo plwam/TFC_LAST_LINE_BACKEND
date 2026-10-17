@@ -1,0 +1,120 @@
+{% load i18n dashboard_extras %}
+{% comment %} Onglet « Journal SDK » — journal de fonctionnement du SDK, en temps réel (polling).
+   Le SDK pousse des signaux de vie (heartbeat) et des messages ; l'état en ligne / dégradé /
+   hors ligne est déduit de la fraîcheur du dernier heartbeat (jamais déclaré par le client).
+   Le conteneur `data-sdk-log-stream` est pris en charge par dashboard.js (initSdkLogStream). {% endcomment %}
+
+<div data-sdk-log-stream
+     data-feed-url="{{ logs_feed_url }}"
+     data-since="{{ logs_since }}"
+     data-live="{{ live_enabled|yesno:'1,0' }}"
+     data-interval="8000">
+
+  {# --- État courant du SDK + fraîcheur du dernier signal de vie --- #}
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-g-700 bg-g-850 p-4">
+    <div class="flex items-center gap-3">
+      {% include "components/badge_sdk_status.html" with state=sdk_status.state %}
+      <p class="text-xs text-g-muted">
+        {% translate "Dernier signal de vie :" %}
+        <span data-sdk-last-heartbeat class="text-g-text">{{ sdk_status.last_heartbeat_display|default:"—" }}</span>
+        {% if sdk_status.recent_errors %}
+          · <span class="text-red-300">{% blocktranslate count n=sdk_status.recent_errors %}{{ n }} erreur récente{% plural %}{{ n }} erreurs récentes{% endblocktranslate %}</span>
+        {% endif %}
+      </p>
+    </div>
+    {% if live_enabled %}
+      <p class="flex items-center gap-2 text-xs text-g-faint">
+        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>{% translate "Mise à jour automatique" %}
+      </p>
+    {% endif %}
+  </div>
+
+  {# --- Filtres --- #}
+  <form method="get" class="mb-4 grid gap-3 rounded-lg border border-g-700 bg-g-850 p-4 sm:grid-cols-2 lg:grid-cols-5">
+    <input type="hidden" name="tab" value="logs">
+    <div>
+      <label for="level" class="block text-xs font-medium text-g-muted">{% translate "Niveau" %}</label>
+      <select id="level" name="level" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+        <option value="">{% translate "Tous les niveaux" %}</option>
+        {% for value, label in level_choices %}
+          <option value="{{ value }}" {% if filters.level == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="kind" class="block text-xs font-medium text-g-muted">{% translate "Type" %}</label>
+      <select id="kind" name="kind" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+        <option value="">{% translate "Tous les types" %}</option>
+        {% for value, label in kind_choices %}
+          <option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="q" class="block text-xs font-medium text-g-muted">{% translate "Message" %}</label>
+      <input id="q" name="q" type="text" value="{{ filters.q }}" placeholder="{% translate 'Rechercher dans le message' %}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+    </div>
+    <div>
+      <label for="date_from" class="block text-xs font-medium text-g-muted">{% translate "Du" %}</label>
+      <input id="date_from" name="date_from" type="date" value="{{ filters.date_from }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+    </div>
+    <div>
+      <label for="date_to" class="block text-xs font-medium text-g-muted">{% translate "Au" %}</label>
+      <input id="date_to" name="date_to" type="date" value="{{ filters.date_to }}" class="mt-1 block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text">
+    </div>
+    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
+      <button type="submit" class="rounded-md bg-g-accent px-4 py-2 text-sm font-medium text-white hover:bg-g-accentHover">{% translate "Filtrer" %}</button>
+      <a href="?tab=logs" class="rounded-md px-4 py-2 text-sm font-medium text-g-muted hover:text-g-text">{% translate "Réinitialiser" %}</a>
+      <span class="ml-auto text-xs text-g-muted">
+        {% blocktranslate count counter=logs_count %}{{ counter }} entrée{% plural %}{{ counter }} entrées{% endblocktranslate %}
+      </span>
+    </div>
+  </form>
+
+  {% if log_rows %}
+    <div class="overflow-x-auto rounded-lg border border-g-700 bg-g-850">
+      <table class="min-w-full text-sm">
+        <caption class="sr-only">{% translate "Journal de fonctionnement du SDK" %}</caption>
+        <thead class="bg-g-800/60 text-left text-xs uppercase tracking-wide text-g-muted">
+          <tr>
+            <th scope="col" class="px-4 py-2">{% translate "Reçu le" %}</th>
+            <th scope="col" class="px-4 py-2">{% translate "Niveau" %}</th>
+            <th scope="col" class="px-4 py-2">{% translate "Type" %}</th>
+            <th scope="col" class="px-4 py-2">{% translate "Message" %}</th>
+            <th scope="col" class="px-4 py-2">{% translate "Version SDK" %}</th>
+            <th scope="col" class="px-4 py-2">{% translate "Session" %}</th>
+          </tr>
+        </thead>
+        <tbody data-log-rows>
+          {% for row in log_rows %}
+            <tr class="border-t border-g-700 align-top hover:bg-g-800">
+              <td class="whitespace-nowrap px-4 py-2 text-g-muted">{{ row.received_display }}</td>
+              <td class="px-4 py-2">{% include "components/badge_log_level.html" with level=row.level %}</td>
+              <td class="px-4 py-2 text-g-muted">{{ row.kind_label }}</td>
+              <td class="px-4 py-2 text-g-text">
+                <div class="break-words">{{ row.message|default:"—" }}</div>
+                {% if row.has_context %}
+                  <details class="mt-1">
+                    <summary class="cursor-pointer text-xs text-g-faint hover:text-g-muted">{% translate "Contexte" %}</summary>
+                    <pre class="mt-1 whitespace-pre-wrap break-all rounded bg-g-800 p-2 text-xs text-g-muted">{{ row.context_json }}</pre>
+                  </details>
+                {% endif %}
+              </td>
+              <td class="px-4 py-2 text-g-muted">{{ row.sdk_version|default:"—" }}</td>
+              <td class="px-4 py-2 text-g-muted">{{ row.session_label|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "components/pagination.html" with page_obj=logs_page %}
+  {% elif has_log_filters %}
+    {% translate "Aucune entrée ne correspond à ces critères" as no_match_title %}
+    {% translate "Élargissez ou réinitialisez les filtres." as no_match_desc %}
+    {% include "components/empty_state.html" with title=no_match_title description=no_match_desc %}
+  {% else %}
+    {% translate "Aucun journal pour l'instant" as no_log_title %}
+    {% translate "Dès que votre SDK enverra son premier signal de vie (heartbeat) à l'endpoint de journal, il apparaîtra ici en temps réel." as no_log_desc %}
+    {% include "components/empty_state.html" with title=no_log_title description=no_log_desc %}
+  {% endif %}
+</div>

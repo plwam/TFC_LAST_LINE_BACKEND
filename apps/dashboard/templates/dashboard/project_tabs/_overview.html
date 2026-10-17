@@ -1,5 +1,9 @@
 {% load i18n %}
 {# Onglet « Vue d'ensemble » (06_FRONTEND_GUIDE.md §8.6.1) — thème sombre. #}
+{% translate "Suspendre ce projet ?" as confirm_suspend_title %}
+{% translate "Les appels signés (SDK / LMS) de ce projet seront refusés jusqu'à sa réactivation." as confirm_suspend_msg %}
+{% translate "Désactiver ce projet ?" as confirm_disable_title %}
+{% translate "Le projet cessera d'accepter les appels signés. Vous pourrez le réactiver à tout moment." as confirm_disable_msg %}
 <div class="grid gap-6 lg:grid-cols-3">
   <div class="rounded-lg border border-g-700 bg-g-850 p-6 lg:col-span-2">
     <h2 class="text-sm font-medium text-g-text">{% translate "Informations" %}</h2>
@@ -8,10 +12,43 @@
       <div><dt class="text-g-muted">{% translate "Description" %}</dt><dd class="text-g-text">{{ project.description|default:"—" }}</dd></div>
       <div><dt class="text-g-muted">{% translate "Adresse du site" %}</dt><dd class="font-mono text-g-text break-all">{{ project.site_url }}</dd></div>
       <div><dt class="text-g-muted">{% translate "Créé le" %}</dt><dd class="text-g-text">{{ project.created_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></dd></div>
+      <div>
+        <dt class="text-g-muted">{% translate "État" %}</dt>
+        <dd class="mt-1">
+          {% if project.status == 'active' %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>{% translate "Actif" %}
+            </span>
+          {% elif project.status == 'suspended' %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>{% translate "Suspendu" %}
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-g-600 bg-g-800 px-2.5 py-1 text-xs font-medium text-g-muted">
+              <span class="h-1.5 w-1.5 rounded-full bg-g-faint"></span>{% translate "Désactivé" %}
+            </span>
+          {% endif %}
+        </dd>
+      </div>
       <div><dt class="text-g-muted">{% translate "Statut du compte" %}</dt><dd class="text-g-text">{{ developer_status }}</dd></div>
     </dl>
   </div>
   <div class="space-y-4">
+    {# --- État de fonctionnement du SDK (heartbeat le plus récent) --- #}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-5">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-medium text-g-text">{% translate "État du SDK" %}</p>
+        {% include "components/badge_sdk_status.html" with state=sdk_status.state %}
+      </div>
+      <p class="mt-2 text-xs text-g-muted">
+        {% translate "Dernier signal de vie :" %} <span class="text-g-text">{{ sdk_status.last_heartbeat_display|default:"—" }}</span>
+      </p>
+      {% if sdk_status.recent_errors %}
+        <p class="mt-1 text-xs text-red-300">{% blocktranslate count n=sdk_status.recent_errors %}{{ n }} erreur récente{% plural %}{{ n }} erreurs récentes{% endblocktranslate %}</p>
+      {% endif %}
+      <a href="?tab=logs" class="mt-3 inline-block text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Voir le journal SDK" %} ›</a>
+    </div>
+
     <div class="rounded-lg border border-g-700 bg-g-850 p-5">
       <p class="text-sm text-g-muted">{% translate "Sessions totales" %}</p>
       <p class="mt-1 text-3xl font-medium text-g-text">{{ sessions_total }}</p>
@@ -24,6 +61,46 @@
       <p class="text-sm text-g-muted">{% translate "Événements (30 j)" %}</p>
       <p class="mt-1 text-3xl font-medium text-g-text">{{ events_30d }}</p>
     </div>
+
+    {# --- Cycle de vie du projet : suspendre / désactiver / réactiver (réversible) --- #}
+    <div class="rounded-lg border border-g-700 bg-g-850 p-5">
+      <p class="text-sm font-medium text-g-text">{% translate "Cycle de vie" %}</p>
+      <p class="mt-2 text-xs text-g-muted">
+        {% if project.status == 'active' %}
+          {% translate "Un projet suspendu ou désactivé cesse d'accepter les appels signés de son SDK." %}
+        {% else %}
+          {% translate "Réactivez le projet pour que ses clés soient de nouveau acceptées." %}
+        {% endif %}
+      </p>
+      {% if developer_status != 'suspended' %}
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          {% if project.status != 'active' %}
+            <form method="post" action="{% url 'dashboard:project-reactivate' project.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="rounded-md border border-emerald-500/40 px-3 py-1.5 font-medium text-emerald-300 hover:bg-emerald-500/10">{% translate "Réactiver" %}</button>
+            </form>
+          {% endif %}
+          {% if project.status != 'suspended' %}
+            <form method="post" action="{% url 'dashboard:project-suspend' project.id %}"
+                  data-confirm data-confirm-title="{{ confirm_suspend_title }}" data-confirm-message="{{ confirm_suspend_msg }}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="rounded-md border border-amber-500/40 px-3 py-1.5 font-medium text-amber-300 hover:bg-amber-500/10">{% translate "Suspendre" %}</button>
+            </form>
+          {% endif %}
+          {% if project.status != 'disabled' %}
+            <form method="post" action="{% url 'dashboard:project-disable' project.id %}"
+                  data-confirm data-confirm-title="{{ confirm_disable_title }}" data-confirm-message="{{ confirm_disable_msg }}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="rounded-md border border-red-500/40 px-3 py-1.5 font-medium text-red-300 hover:bg-red-500/10">{% translate "Désactiver" %}</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
     <a href="?tab=sessions" class="block text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Voir les sessions" %} ›</a>
   </div>
 </div>

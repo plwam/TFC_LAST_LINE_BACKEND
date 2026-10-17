@@ -1,6 +1,9 @@
 {% extends "dashboard/base_dashboard.html" %}
 {% load i18n %}
-{# Liste des projets (UC-2, 06_FRONTEND_GUIDE.md §8.4) — thème « console » sombre. #}
+{% comment %} Liste des projets (UC-2, 06_FRONTEND_GUIDE.md §8.4) — thème « console » sombre.
+   Présentation en CARTES : chaque projet expose sa site_url, sa description, ses clés, son
+   nombre de sessions, sa date de création et son état (actif / suspendu / désactivé), avec les
+   actions de cycle de vie (suspendre, désactiver, réactiver) directement sur la carte. {% endcomment %}
 
 {% block title %}{% translate "Projets" %}{% endblock %}
 
@@ -16,51 +19,154 @@
       {% include "components/button.html" with label=new_project_label href=create_url variant="primary" %}
     {% endif %}
   </div>
-  <form method="get" class="mb-4 flex flex-wrap gap-2">
-    <label for="q" class="sr-only">{% translate "Rechercher un projet par nom" %}</label>
-    <input id="q" name="q" type="search" value="{{ q }}" placeholder="{% translate 'Rechercher par nom…' %}"
-           class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text placeholder:text-g-faint focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40 sm:max-w-xs">
-    <button type="submit" class="rounded-md border border-g-600 px-3 py-2 text-sm font-medium text-g-blue hover:bg-g-800">{% translate "Filtrer" %}</button>
+  <form method="get" class="mb-6 flex flex-wrap items-end gap-3">
+    <div>
+      <label for="q" class="mb-1 block text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Recherche" %}</label>
+      <input id="q" name="q" type="search" value="{{ q }}" placeholder="{% translate 'Nom du projet…' %}"
+             class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text placeholder:text-g-faint focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40 sm:w-56">
+    </div>
+    <div>
+      <label for="status" class="mb-1 block text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "État" %}</label>
+      <select id="status" name="status"
+              class="block w-full rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40 sm:w-40">
+        <option value="">{% translate "Tous" %}</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>
+            {% if value == 'active' %}{% translate "Actif" %}{% elif value == 'suspended' %}{% translate "Suspendu" %}{% else %}{% translate "Désactivé" %}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="date_from" class="mb-1 block text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Créé après" %}</label>
+      <input id="date_from" name="date_from" type="date" value="{{ date_from }}"
+             class="block rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40">
+    </div>
+    <div>
+      <label for="date_to" class="mb-1 block text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Créé avant" %}</label>
+      <input id="date_to" name="date_to" type="date" value="{{ date_to }}"
+             class="block rounded-md border border-g-600 bg-g-800 px-3 py-2 text-sm text-g-text focus:border-g-blue focus:outline-none focus:ring-2 focus:ring-g-accent/40">
+    </div>
+    <button type="submit" class="rounded-md border border-g-600 px-4 py-2 text-sm font-medium text-g-blue hover:bg-g-800">{% translate "Filtrer" %}</button>
+    {% if has_filters %}
+      <a href="{% url 'dashboard:project-list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-g-muted hover:text-g-text">{% translate "Réinitialiser" %}</a>
+    {% endif %}
   </form>
 {% endblock %}
 
 {% block content %}
+  {% translate "Suspendre le projet ?" as confirm_suspend_title %}
+  {% translate "Les appels signés (SDK / LMS) de ce projet seront refusés jusqu'à sa réactivation." as confirm_suspend_msg %}
+  {% translate "Désactiver le projet ?" as confirm_disable_title %}
+  {% translate "Le projet cessera d'accepter les appels signés. Vous pourrez le réactiver à tout moment." as confirm_disable_msg %}
   {% if projects %}
-    <div class="overflow-x-auto rounded-lg border border-g-700 bg-g-850">
-      <table class="min-w-full text-sm">
-        <caption class="sr-only">{% translate "Liste de vos projets" %}</caption>
-        <thead class="bg-g-800/60 text-left text-xs uppercase tracking-wide text-g-muted">
-          <tr>
-            <th scope="col" class="px-4 py-3">{% translate "Nom" %}</th>
-            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Site" %}</th>
-            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Sessions" %}</th>
-            <th scope="col" class="hidden px-4 py-3 sm:table-cell">{% translate "Créé le" %}</th>
-            <th scope="col" class="px-4 py-3 text-right">{% translate "Actions" %}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for project in projects %}
-            <tr class="border-t border-g-700 hover:bg-g-800">
-              <td class="px-4 py-3">
-                <a href="{% url 'dashboard:project-detail' project.id %}" class="font-medium text-g-blue hover:text-g-blue/80">{{ project.name }}</a>
-              </td>
-              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">
-                <span title="{{ project.site_url }}">{{ project.site_url|truncatechars:40 }}</span>
-              </td>
-              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">{{ project.sessions_count }}</td>
-              <td class="hidden px-4 py-3 text-g-muted sm:table-cell">{{ project.created_at|date:"d/m/Y" }}</td>
-              <td class="px-4 py-3 text-right">
-                <a href="{% url 'dashboard:project-detail' project.id %}" class="text-sm font-medium text-g-blue hover:text-g-blue/80">{% translate "Ouvrir" %}</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {% for project in projects %}
+        {% url 'dashboard:project-detail' project.id as project_url %}
+        <article class="group flex flex-col overflow-hidden rounded-xl border border-g-700 bg-g-850 transition hover:border-g-blue/40 hover:shadow-lg hover:shadow-black/30">
+          <div class="flex flex-1 flex-col gap-4 p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <a href="{{ project_url }}" class="block truncate text-base font-medium text-g-text group-hover:text-g-blue">{{ project.name }}</a>
+                <a href="{{ project.site_url }}" target="_blank" rel="noopener noreferrer" title="{{ project.site_url }}"
+                   class="mt-1 inline-flex max-w-full items-center gap-1.5 text-xs text-g-muted hover:text-g-blue">
+                  <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path stroke-linecap="round" d="M3.6 9h16.8M3.6 15h16.8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/>
+                  </svg>
+                  <span class="truncate">{{ project.site_url }}</span>
+                </a>
+              </div>
+              {% if project.status == 'active' %}
+                <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>{% translate "Actif" %}
+                </span>
+              {% elif project.status == 'suspended' %}
+                <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>{% translate "Suspendu" %}
+                </span>
+              {% else %}
+                <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-g-600 bg-g-800 px-2.5 py-1 text-xs font-medium text-g-muted">
+                  <span class="h-1.5 w-1.5 rounded-full bg-g-faint"></span>{% translate "Désactivé" %}
+                </span>
+              {% endif %}
+            </div>
+
+            {% if project.description %}
+              <p class="line-clamp-2 text-sm text-g-muted">{{ project.description }}</p>
+            {% else %}
+              <p class="text-sm italic text-g-faint">{% translate "Aucune description." %}</p>
+            {% endif %}
+
+            <dl class="space-y-2 text-xs">
+              <div class="flex items-center gap-2">
+                <dt class="w-24 shrink-0 text-g-faint">{% translate "Clé publique" %}</dt>
+                <dd class="min-w-0"><span class="inline-block max-w-full truncate rounded bg-g-blue/10 px-2 py-0.5 font-mono text-g-blue">{{ project.public_key }}</span></dd>
+              </div>
+              <div class="flex items-center gap-2">
+                <dt class="w-24 shrink-0 text-g-faint">{% translate "Clé secrète" %}</dt>
+                <dd class="min-w-0"><span class="inline-block max-w-full truncate rounded bg-amber-500/10 px-2 py-0.5 font-mono text-amber-300">{{ project.masked_secret }}</span></dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-g-800 bg-g-900/40 px-5 py-3 text-xs text-g-muted">
+            <div class="flex min-w-0 items-center gap-4">
+              <span class="inline-flex items-center gap-1.5" title="{% translate 'Sessions' %}">
+                <svg class="h-4 w-4 shrink-0 text-g-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18"/>
+                  <path stroke-linecap="round" d="M7 15v3M12 11v7M17 7v11"/>
+                </svg>
+                <span class="font-medium text-g-text">{{ project.sessions_count }}</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5" title="{% translate 'Créé le' %}">
+                <svg class="h-4 w-4 shrink-0 text-g-faint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <rect x="3" y="4.5" width="18" height="16.5" rx="2"/>
+                  <path stroke-linecap="round" d="M3 9.75h18M8.25 3v3M15.75 3v3"/>
+                </svg>
+                {{ project.created_at|date:"d/m/Y" }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              {% if developer_status != 'suspended' %}
+                {% if project.status != 'active' %}
+                  <form method="post" action="{% url 'dashboard:project-reactivate' project.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-md border border-emerald-500/40 px-2.5 py-1 font-medium text-emerald-300 hover:bg-emerald-500/10">{% translate "Réactiver" %}</button>
+                  </form>
+                {% endif %}
+                {% if project.status != 'suspended' %}
+                  <form method="post" action="{% url 'dashboard:project-suspend' project.id %}"
+                        data-confirm data-confirm-title="{{ confirm_suspend_title }}" data-confirm-message="{{ confirm_suspend_msg }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-md border border-amber-500/40 px-2.5 py-1 font-medium text-amber-300 hover:bg-amber-500/10">{% translate "Suspendre" %}</button>
+                  </form>
+                {% endif %}
+                {% if project.status != 'disabled' %}
+                  <form method="post" action="{% url 'dashboard:project-disable' project.id %}"
+                        data-confirm data-confirm-title="{{ confirm_disable_title }}" data-confirm-message="{{ confirm_disable_msg }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="rounded-md border border-red-500/40 px-2.5 py-1 font-medium text-red-300 hover:bg-red-500/10">{% translate "Désactiver" %}</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+              <a href="{{ project_url }}" class="inline-flex shrink-0 items-center gap-1 font-medium text-g-blue hover:text-g-blue/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-g-blue">
+                {% translate "Ouvrir" %} <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
     </div>
     {% include "components/pagination.html" with page_obj=page_obj %}
   {% else %}
-    {% if q %}
-      {% translate "Aucun projet ne correspond à cette recherche." as no_match_title %}
+    {% if has_filters %}
+      {% translate "Aucun projet ne correspond à ces filtres." as no_match_title %}
       {% include "components/empty_state.html" with title=no_match_title %}
     {% else %}
       {% translate "Aucun projet pour l'instant" as no_project_title %}

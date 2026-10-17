@@ -21,6 +21,13 @@ from apps.core.managers import TenantScopedManager
 
 
 class Project(models.Model):
+    class Status(models.TextChoices):
+        # Cycle de vie d'un projet, distinct de l'archivage : un projet `suspended`/`disabled`
+        # garde ses données et sa place dans le dashboard, mais ses clés ne valident plus rien.
+        ACTIVE = "active", "active"
+        SUSPENDED = "suspended", "suspended"
+        DISABLED = "disabled", "disabled"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     developer = models.ForeignKey(
         "developers.Developer",
@@ -39,6 +46,12 @@ class Project(models.Model):
     # Seuls les 4 derniers caractères sont conservés en clair pour l'affichage masqué
     # « sk_live_••••1234 » sans avoir à déchiffrer le secret à chaque rendu de page.
     secret_last4 = models.CharField(max_length=4, blank=True, default="")
+
+    # Cycle de vie du projet (actif / suspendu / désactivé). Distinct de l'archivage :
+    # suspendre ou désactiver coupe les clés HMAC sans supprimer le projet, et est réversible.
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
 
     # Archivage (voir note de module) — remplace une suppression physique destructrice.
     is_archived = models.BooleanField(default=False)
@@ -65,3 +78,21 @@ class Project(models.Model):
         Exemple : "sk_live_••••a1b2".
         """
         return f"sk_live_••••{self.secret_last4 or '????'}"
+
+    # --- Cycle de vie : propriétés utilisées par l'interface et l'authentification machine ---
+    @property
+    def is_active(self) -> bool:
+        return self.status == self.Status.ACTIVE
+
+    @property
+    def is_suspended(self) -> bool:
+        return self.status == self.Status.SUSPENDED
+
+    @property
+    def is_disabled(self) -> bool:
+        return self.status == self.Status.DISABLED
+
+    @property
+    def accepts_traffic(self) -> bool:
+        """Vrai si les clés HMAC du projet doivent être acceptées (actif ET non archivé)."""
+        return self.is_active and not self.is_archived

@@ -17,6 +17,10 @@ class AccessLog(models.Model):
         CREATE_PROJECT = "create_project", "create_project"
         UPDATE_PROJECT = "update_project", "update_project"
         DELETE_PROJECT = "delete_project", "delete_project"
+        # Cycle de vie d'un projet : suspension / désactivation / réactivation (réversible).
+        SUSPEND_PROJECT = "suspend_project", "suspend_project"
+        DISABLE_PROJECT = "disable_project", "disable_project"
+        REACTIVATE_PROJECT = "reactivate_project", "reactivate_project"
         REGENERATE_SECRET = "regenerate_secret", "regenerate_secret"
         REVEAL_SECRET = "reveal_secret", "reveal_secret"
         CONSULTATION = "consultation", "consultation"

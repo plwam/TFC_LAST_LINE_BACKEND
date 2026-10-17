@@ -11,6 +11,7 @@ Règles appliquées partout :
 
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Count, Value
 from django.conf import settings
@@ -18,7 +19,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy
 from django.views.decorators.cache import never_cache
 from django.views.generic import ListView, TemplateView, View
@@ -26,17 +29,27 @@ from django.views.generic import ListView, TemplateView, View
 from apps.audit.models import AccessLog
 from apps.dashboard.forms import AccountForm, ConfirmByNameForm, ProjectForm
 from apps.dashboard.mixins import DeveloperRequiredMixin, WritableDeveloperRequiredMixin
-from apps.dashboard.presenters import CRITICAL_TYPES, label_for_type, present_event
+from apps.dashboard.presenters import (
+    CRITICAL_TYPES,
+    LOG_KIND_LABELS,
+    LOG_LEVEL_LABELS,
+    label_for_type,
+    log_row,
+    present_event,
+    sdk_status_row,
+)
 from apps.events.models import Event
 from apps.projects.models import Project
 from apps.projects.services import ProjectService
+from apps.sdklogs.models import SdkLog
+from apps.sdklogs.status import compute_sdk_status
 from apps.sessions.models import ExamSession
 
 from datetime import timedelta
 
 # Onglets valides du détail projet. Un onglet inconnu ou absent retombe sur "overview"
 # (06_FRONTEND_GUIDE.md §8.6).
-PROJECT_TABS = {"overview", "keys", "sessions", "integration", "settings"}
+PROJECT_TABS = {"overview", "keys", "sessions", "logs", "integration", "settings"}
 
 
 def get_project_or_404(request, pk, *, include_archived=False):
@@ -89,17 +102,30 @@ class HomeView(DeveloperRequiredMixin, TemplateView):
         return ctx
 
 
-class DocsView(DeveloperRequiredMixin, TemplateView):
+class DocsView(LoginRequiredMixin, TemplateView):
     """Documentation des ENDPOINTS, intégrée au dashboard (`/dashboard/docs/`).
+
+    Contenu adapté au rôle : un **développeur** ne voit que les endpoints que sa plateforme
+    (SDK / LMS) utilise pour communiquer avec le backend (API machine HMAC + API publique) ; le
+    **superutilisateur** (propriétaire du système) voit en plus les surfaces de gestion (API JWT :
+    authentification, projets, sessions). Le filtrage est fait dans le template.
 
     Pourquoi une page maison plutôt que Redoc : Redoc/Swagger chargent leur moteur depuis un CDN
     tiers ; si ce CDN est bloqué, la page reste blanche. Cette page est rendue CÔTÉ SERVEUR (les
-    exemples de code sont colorés par Pygments, cf. `code_extras`) et ne documente que les
-    endpoints HTTP réels (API machine HMAC, API publique, jeton JWT). La documentation du SDK
+    exemples de code sont colorés par Pygments, cf. `code_extras`). La documentation du SDK
     (JavaScript) fera l'objet d'une étape ultérieure.
     """
 
     template_name = "dashboard/docs.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Un superutilisateur n'a pas forcément de profil Developer : on ne lui applique pas la
+        # règle « espace développeur obligatoire » — il doit pouvoir documenter toutes les surfaces.
+        if request.user.is_authenticated and not request.user.is_superuser:
+            if getattr(request.user, "developer_profile", None) is None:
+                messages.error(request, "Votre compte n'est pas rattaché à un espace développeur.")
+                return redirect("account_login")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class ProjectListView(DeveloperRequiredMixin, ListView):
@@ -118,14 +144,37 @@ class ProjectListView(DeveloperRequiredMixin, ListView):
             qs = qs.annotate(sessions_count=Count("exam_sessions"))
         else:
             qs = qs.annotate(sessions_count=Value(0))
-        query = self.request.GET.get("q", "").strip()
+        params = self.request.GET
+        query = params.get("q", "").strip()
         if query:
             qs = qs.filter(name__icontains=query)
+
+        # Filtre par état du projet (actif / suspendu / désactivé) — valeur contrôlée par liste
+        # blanche : jamais de valeur arbitraire issue de l'URL.
+        status = params.get("status", "").strip()
+        if status in dict(Project.Status.choices):
+            qs = qs.filter(status=status)
+
+        # Filtre par période de création (bornes incluses, format <input type="date">).
+        date_from = params.get("date_from", "").strip()
+        date_to = params.get("date_to", "").strip()
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["q"] = self.request.GET.get("q", "").strip()
+        params = self.request.GET
+        ctx["q"] = params.get("q", "").strip()
+        ctx["filter_status"] = params.get("status", "").strip()
+        ctx["date_from"] = params.get("date_from", "").strip()
+        ctx["date_to"] = params.get("date_to", "").strip()
+        ctx["status_choices"] = Project.Status.choices
+        ctx["has_filters"] = any(
+            [ctx["q"], ctx["filter_status"], ctx["date_from"], ctx["date_to"]]
+        )
         ctx["create_url"] = reverse("dashboard:project-create")
         return ctx
 
@@ -172,6 +221,9 @@ class ProjectDetailView(DeveloperRequiredMixin, TemplateView):
         ctx["delete_url"] = reverse("dashboard:project-delete", args=[project.id])
         # URL du SDK injectée dans l'onglet « Intégration » (jamais codée en dur, §8.6.4).
         ctx["sdk_cdn_url"] = settings.SDK_CDN_URL
+        # État de fonctionnement du SDK (en ligne / dégradé / hors ligne) : affiché sur la vue
+        # d'ensemble ET en tête du journal.
+        ctx["sdk_status"] = sdk_status_row(compute_sdk_status(project))
 
         if tab == "overview":
             sessions = project.exam_sessions.all()
@@ -183,6 +235,8 @@ class ProjectDetailView(DeveloperRequiredMixin, TemplateView):
             ).count()
         elif tab == "sessions":
             _fill_sessions_tab(ctx, project, self.request)
+        elif tab == "logs":
+            _fill_logs_tab(ctx, project, self.request)
         elif tab == "settings":
             # Le formulaire d'édition est réutilisé dans l'onglet Paramètres (mêmes validations
             # que §8.5) ; l'action du <form> pointe vers la vue d'édition.
@@ -231,6 +285,65 @@ def _fill_sessions_tab(ctx, project, request):
         "date_to": date_to,
         "sort": sort,
     }
+
+
+def _fill_logs_tab(ctx, project, request):
+    """Prépare la liste filtrée + paginée du journal SDK d'un projet (onglet « Journal SDK »)."""
+    qs = SdkLog.objects.filter(project=project).select_related("session")
+
+    level = request.GET.get("level", "").strip()
+    kind = request.GET.get("kind", "").strip()
+    query = request.GET.get("q", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+
+    # Valeurs contrôlées par liste blanche : jamais de valeur arbitraire issue de l'URL.
+    if level in dict(SdkLog.Level.choices):
+        qs = qs.filter(level=level)
+    if kind in dict(SdkLog.Kind.choices):
+        qs = qs.filter(kind=kind)
+    if query:
+        qs = qs.filter(message__icontains=query)
+    # Période : bornes incluses sur la date de RÉCEPTION serveur (format <input type="date">).
+    if date_from:
+        qs = qs.filter(received_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(received_at__date__lte=date_to)
+
+    # Tri par défaut : du plus récent au plus ancien (Meta.ordering) — pas de tri par l'URL.
+    page_obj = Paginator(qs, 50).get_page(request.GET.get("page"))
+    ctx["logs_page"] = page_obj
+    ctx["logs_count"] = page_obj.paginator.count
+    ctx["log_rows"] = [log_row(log) for log in page_obj.object_list]
+    # (valeur, libellé lisible) pour l'alimentation des listes déroulantes de filtre.
+    ctx["level_choices"] = [
+        (value, LOG_LEVEL_LABELS.get(value, value)) for value, _ in SdkLog.Level.choices
+    ]
+    ctx["kind_choices"] = [
+        (value, LOG_KIND_LABELS.get(value, value)) for value, _ in SdkLog.Kind.choices
+    ]
+    ctx["filters"] = {
+        "level": level,
+        "kind": kind,
+        "q": query,
+        "date_from": date_from,
+        "date_to": date_to,
+    }
+    has_filters = any([level, kind, query, date_from, date_to])
+    ctx["has_log_filters"] = has_filters
+
+    # Flux temps réel (polling) : l'endpoint JSON renvoie les entrées reçues depuis `logs_since`.
+    ctx["logs_feed_url"] = reverse("dashboard:project-logs-feed", args=[project.id])
+    # On n'AJOUTE en tête que sur la 1re page sans filtre — sinon un ajout en tête violerait le
+    # filtre / la pagination affichés (on se contente alors de rafraîchir le badge d'état).
+    ctx["live_enabled"] = (page_obj.number == 1) and not has_filters
+    latest = (
+        SdkLog.objects.filter(project=project)
+        .order_by("-received_at")
+        .values_list("received_at", flat=True)
+        .first()
+    )
+    ctx["logs_since"] = latest.isoformat() if latest else ""
 
 
 class SessionDetailView(DeveloperRequiredMixin, TemplateView):
@@ -386,6 +499,92 @@ class ProjectRegenerateSecretView(WritableDeveloperRequiredMixin, View):
         )
         url = reverse("dashboard:project-detail", args=[project.id]) + "?tab=keys"
         return redirect(url)
+
+
+class _ProjectStatusChangeView(WritableDeveloperRequiredMixin, View):
+    """Base des actions de cycle de vie d'un projet (suspendre / désactiver / réactiver).
+
+    Toute la logique d'écriture (changement d'état + audit) vit dans `ProjectService` : ces vues
+    ne font que résoudre le projet scopé sur le développeur, appeler le service et rediriger.
+    """
+
+    service_method = ""
+    success_message = ""
+
+    def post(self, request, pk):
+        project = get_project_or_404(request, pk)
+        getattr(ProjectService, self.service_method)(project, actor=request.user, request=request)
+        messages.success(request, self.success_message.format(name=project.name))
+        return redirect(self._next(request, project))
+
+    @staticmethod
+    def _next(request, project):
+        # Retour à la page d'origine (liste ou détail) si elle est fournie et sûre.
+        candidate = request.POST.get("next", "")
+        if candidate and url_has_allowed_host_and_scheme(
+            candidate,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return candidate
+        return reverse("dashboard:project-detail", args=[project.id])
+
+
+class ProjectSuspendView(_ProjectStatusChangeView):
+    """Suspension d'un projet `/dashboard/projects/<uuid>/suspend/` (réversible)."""
+
+    service_method = "suspend_project"
+    success_message = "Le projet « {name} » a été suspendu."
+
+
+class ProjectDisableView(_ProjectStatusChangeView):
+    """Désactivation d'un projet `/dashboard/projects/<uuid>/disable/` (réversible)."""
+
+    service_method = "disable_project"
+    success_message = "Le projet « {name} » a été désactivé."
+
+
+class ProjectReactivateView(_ProjectStatusChangeView):
+    """Réactivation d'un projet `/dashboard/projects/<uuid>/reactivate/`."""
+
+    service_method = "reactivate_project"
+    success_message = "Le projet « {name} » a été réactivé."
+
+
+@method_decorator(never_cache, name="dispatch")
+class ProjectLogsFeedView(DeveloperRequiredMixin, View):
+    """Flux JSON du journal SDK (`/dashboard/projects/<uuid>/logs/feed/`).
+
+    Alimente le rafraîchissement temps réel de l'onglet « Journal SDK » : le navigateur interroge
+    cet endpoint toutes les quelques secondes avec le paramètre `since` (dernier horodatage connu)
+    et reçoit uniquement les entrées reçues depuis. La réponse porte aussi l'état courant du SDK.
+
+    `never_cache` : un flux « temps réel » mis en cache afficherait des données périmées.
+    """
+
+    def get(self, request, pk):
+        project = get_project_or_404(request, pk)
+
+        # Scoping : le journal d'un autre projet n'est jamais atteignable (404 via le helper).
+        qs = SdkLog.objects.filter(project=project).select_related("session")
+
+        since_raw = request.GET.get("since", "").strip()
+        since = parse_datetime(since_raw) if since_raw else None
+        if since is not None and timezone.is_naive(since):
+            # `since` est produit côté serveur (ISO, conscient du fuseau) ; on tolère néanmoins
+            # une valeur naïve en la considérant dans le fuseau courant.
+            since = timezone.make_aware(since)
+        if since is not None:
+            qs = qs.filter(received_at__gt=since)
+
+        # Plafond de 100 : un onglet resté longtemps fermé ne doit pas recevoir un mur d'entrées.
+        logs = qs.order_by("-received_at")[:100]
+        return JsonResponse(
+            {
+                "status": sdk_status_row(compute_sdk_status(project)),
+                "logs": [log_row(log) for log in logs],
+            }
+        )
 
 
 class AccountView(DeveloperRequiredMixin, View):

@@ -105,7 +105,7 @@ def test_project_list_renders_projects(client, developer, project):
     assert "Nouveau projet" in html
 
 
-@pytest.mark.parametrize("tab", ["overview", "keys", "sessions", "integration", "settings"])
+@pytest.mark.parametrize("tab", ["overview", "keys", "sessions", "logs", "integration", "settings"])
 def test_project_detail_all_tabs_render(client, developer, project, tab):
     client.force_login(developer.user)
     response = client.get(reverse("dashboard:project-detail", args=[project.id]), {"tab": tab})
@@ -141,6 +141,34 @@ def test_project_create_form_renders(client, developer):
     assert 'name="site_url"' in html
 
 
+def test_project_list_exposes_lifecycle_actions_with_confirmation(client, developer, project):
+    client.force_login(developer.user)
+    html = client.get(reverse("dashboard:project-list")).content.decode()
+    # La fenêtre d'alerte partagée est présente dans la coquille.
+    assert 'id="confirm-action-dialog"' in html
+    # Les actions dangereuses sont câblées au dialogue de confirmation.
+    assert reverse("dashboard:project-suspend", args=[project.id]) in html
+    assert reverse("dashboard:project-disable", args=[project.id]) in html
+    assert "data-confirm-title=" in html
+
+
+def test_project_overview_shows_lifecycle_actions(client, developer, project):
+    client.force_login(developer.user)
+    html = client.get(
+        reverse("dashboard:project-detail", args=[project.id]), {"tab": "overview"}
+    ).content.decode()
+    assert "Cycle de vie" in html
+    assert reverse("dashboard:project-suspend", args=[project.id]) in html
+    assert reverse("dashboard:project-disable", args=[project.id]) in html
+    assert "data-confirm-title=" in html
+
+
+def test_project_detail_delete_requires_confirmation(client, developer, project):
+    client.force_login(developer.user)
+    html = client.get(reverse("dashboard:project-detail", args=[project.id])).content.decode()
+    assert "data-confirm-link" in html
+
+
 def test_project_delete_confirm_renders(client, developer, project):
     client.force_login(developer.user)
     response = client.get(reverse("dashboard:project-delete", args=[project.id]))
@@ -159,20 +187,60 @@ def test_flash_message_rendered_after_create(client, developer):
     assert "Projet créé" in response.content.decode()
 
 
-def test_docs_page_renders_endpoints(client, developer):
+def test_docs_page_developer_sees_only_integration_endpoints(client, developer):
+    """Un développeur ne voit que les endpoints d'intégration de sa plateforme (LMS / SDK)."""
     client.force_login(developer.user)
     response = client.get(reverse("dashboard:docs"))
     assert response.status_code == 200
     html = response.content.decode()
-    # Les endpoints réels des trois surfaces sont documentés.
-    assert "/api/v1/auth/token/" in html
+    # Surfaces d'intégration : API machine (SDK / LMS).
     assert "/api/v1/machine/sessions/" in html
     assert "/api/v1/machine/events/" in html
-    assert "/public/registered-hosts/" in html
-    # Chaque bloc de code porte un bouton copier (icône + coche de confirmation), jamais un
-    # simple libellé « Copier » isolé.
+    assert "/api/v1/machine/logs/" in html
+    # Les surfaces de gestion (API JWT) et d'exploitation (API publique, réservée à
+    # l'extension du propriétaire) sont MASQUÉES pour un simple développeur.
+    assert "/api/v1/auth/token/" not in html
+    assert "/api/v1/projects/" not in html
+    assert "/api/v1/sessions/" not in html
+    assert "/public/registered-hosts/" not in html
+    assert "/public/health/" not in html
+    # Chaque bloc de code porte un bouton copier (icône + coche de confirmation).
     assert "data-copy-code-target" in html
     assert "data-copy-check" in html
+    # Liens vers les interfaces générées (Swagger UI et ReDoc).
+    assert reverse("docs:swagger") in html
+    assert reverse("docs:redoc") in html
+
+
+def test_docs_page_superuser_sees_all_endpoints(client, django_user_model):
+    """Le superutilisateur (propriétaire du système) voit toutes les surfaces."""
+    superuser = django_user_model.objects.create_superuser(
+        username="root", email="root@example.com", password="motdepasse"
+    )
+    client.force_login(superuser)
+    response = client.get(reverse("dashboard:docs"))
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert "/api/v1/machine/sessions/" in html
+    assert "/public/registered-hosts/" in html
+    # En plus : les surfaces de gestion réservées au propriétaire.
+    assert "/api/v1/auth/token/" in html
+    assert "/api/v1/projects/" in html
+    assert "/api/v1/sessions/" in html
+
+
+def test_openapi_docs_require_login(client):
+    """Swagger/ReDoc/schéma ne sont pas publics : un anonyme est redirigé vers la connexion."""
+    for name in ("docs:schema", "docs:swagger", "docs:redoc"):
+        response = client.get(reverse(name))
+        assert response.status_code in (301, 302, 303)
+        assert reverse("account_login") in response["Location"]
+
+
+def test_openapi_docs_accessible_when_logged_in(client, developer):
+    client.force_login(developer.user)
+    for name in ("docs:schema", "docs:swagger", "docs:redoc"):
+        assert client.get(reverse(name)).status_code == 200
 
 
 def test_account_page_renders(client, developer):

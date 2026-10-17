@@ -58,11 +58,20 @@ class ProjectSerializer(serializers.ModelSerializer):
             "site_url",
             "public_key",
             "masked_secret",
+            "status",
             "is_archived",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "public_key", "masked_secret", "is_archived", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "public_key",
+            "masked_secret",
+            "status",
+            "is_archived",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class ExamSessionSerializer(serializers.ModelSerializer):
