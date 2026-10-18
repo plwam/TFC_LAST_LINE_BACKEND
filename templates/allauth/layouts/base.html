@@ -12,16 +12,9 @@
 
 {% block body %}
   <div class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-    <div class="mb-6 text-center">
-      <a href="/" class="inline-flex flex-col items-center gap-2">
-        {% if site_branding.logo %}
-          <img src="{{ site_branding.logo.url }}" alt="{{ site_branding.site_name }}" class="h-10 w-auto">
-        {% else %}
-          <span class="text-2xl font-bold tracking-tight text-g-text">{{ site_branding.site_name }}</span>
-        {% endif %}
-      </a>
-      <p class="mt-1 text-sm text-g-faint">{% translate "Surveillance d'examens en ligne" %}</p>
-    </div>
+    <a href="/" class="mb-6 block">
+      {% include "components/brand_mark.html" with size="lg" %}
+    </a>
 
     {# Thème SOMBRE : l'application entière suit la palette « console » (SETUP.md §6). #}
     {% include "components/messages.html" with theme="dark" %}

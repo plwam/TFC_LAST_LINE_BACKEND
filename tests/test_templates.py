@@ -38,7 +38,7 @@ def test_login_page_renders(client):
     response = client.get(reverse("account_login"))
     assert response.status_code == 200
     html = response.content.decode()
-    assert "ExamSDK" in html
+    assert "EvaSee" in html
     assert "Connexion" in html or "connecter" in html.lower()
 
 
@@ -52,7 +52,7 @@ def test_landing_page_public_renders(client):
     assert response.status_code == 200
     html = response.content.decode()
     # Présentation du service + appels à l'action vers connexion et inscription.
-    assert "Surveillez vos examens en ligne" in html
+    assert "Surveillez vos évaluations en ligne" in html
     assert reverse("account_login") in html
     assert reverse("account_signup") in html
     # Pas de redirection : la vitrine est accessible sans compte.

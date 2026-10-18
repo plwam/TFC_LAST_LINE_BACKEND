@@ -21,6 +21,11 @@
 {% endblock %}
 
 {% block content %}
+  {# Marque produit (identité visuelle) — décor SVG futuriste réutilisé depuis la landing. #}
+  <div class="mb-6">
+    {% include "components/brand_mark.html" with size="sm" %}
+  </div>
+
   {# --- Cartes de synthèse --- #}
   <div class="grid gap-4 sm:grid-cols-3">
     <div class="rounded-lg border border-g-700 bg-g-850 p-5">

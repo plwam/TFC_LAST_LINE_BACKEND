@@ -21,7 +21,7 @@ LOGO_EXTENSIONS = ["svg", "png", "jpg", "jpeg", "webp", "gif"]
 class SiteBranding(models.Model):
     site_name = models.CharField(
         max_length=60,
-        default="ExamSDK",
+        default="EvaSee",
         help_text="Nom affiché à côté du logo (et utilisé si aucun logo n'est fourni).",
     )
     logo = models.FileField(

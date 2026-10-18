@@ -10,10 +10,23 @@
    serré, bloc de code, grille de fonctionnalités, pied de page en colonnes). La palette « g »
    est celle de toute l'application (SETUP.md §6). {% endcomment %}
 
-{% block title %}{% translate "Surveillance d'examens en ligne" %}{% endblock %}
+{% block title %}{% translate "Surveillance d'évaluations en ligne" %}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Bouton futuriste : balayage lumineux continu (aucune ressource externe). */
+  @keyframes evasee-scan {
+    0%   { transform: translateX(-180%) skewX(-14deg); opacity: 0; }
+    22%  { opacity: 0.9; }
+    60%  { transform: translateX(280%) skewX(-14deg); opacity: 0; }
+    100% { transform: translateX(280%) skewX(-14deg); opacity: 0; }
+  }
+  .evasee-scan { animation: evasee-scan 3.4s ease-in-out infinite; }
+</style>
+{% endblock %}
 
 {% block body %}
-<div class="flex min-h-screen flex-col">
+<div class="flex min-h-screen flex-col bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
 
   {# --- Barre de navigation (translucide, collante) --- #}
   <header class="sticky top-0 z-40 border-b border-g-800 bg-g-950/80 backdrop-blur">
@@ -29,6 +42,7 @@
         <a href="#fonctionnalites" class="transition hover:text-g-text">{% translate "Fonctionnalités" %}</a>
         <a href="#surveillance" class="transition hover:text-g-text">{% translate "Surveillance" %}</a>
         <a href="#fonctionnement" class="transition hover:text-g-text">{% translate "Fonctionnement" %}</a>
+        <a href="#contact" class="transition hover:text-g-text">{% translate "Contact" %}</a>
         <a href="{% url 'docs:swagger' %}" class="transition hover:text-g-text">{% translate "Documentation" %}</a>
       </div>
       <div class="flex items-center gap-2">
@@ -44,22 +58,30 @@
     <div class="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:pt-24">
       <div class="grid items-start gap-12 lg:grid-cols-[1.05fr_1fr]">
         <div class="min-w-0">
-          <p class="inline-flex items-center gap-2 rounded-full border border-g-800 bg-g-900 px-3 py-1 text-xs font-medium text-g-muted">
+          {# --- Marque produit : nom COMPLET « EvaSee » mis en avant, décor SVG futuriste. --- #}
+          <div class="-mx-2">
+            {% include "components/brand_mark.html" with size="xl" heading="h1" %}
+          </div>
+          <p class="mt-6 inline-flex items-center gap-2 rounded-full border border-g-800 bg-g-900/70 px-3 py-1 text-xs font-medium text-g-muted backdrop-blur">
             <span class="h-1.5 w-1.5 rounded-full bg-g-blue"></span>
-            {% translate "Surveillance d'examens · SDK + extension" %}
+            {% translate "SDK embarqué + extension navigateur" %}
           </p>
-          <h1 class="mt-6 text-4xl font-semibold tracking-tighter text-white sm:text-5xl lg:text-6xl">
-            {% translate "Surveillez vos examens en ligne, en toute confiance." %}
-          </h1>
+          <h2 class="mt-6 text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            {% translate "Surveillez vos évaluations en ligne, en toute confiance." %}
+          </h2>
           <p class="mt-6 max-w-xl text-lg leading-relaxed text-g-muted">
-            {% blocktranslate %}ExamSDK collecte les événements de surveillance d'une session d'examen
-            (changements d'onglet, regard détourné, voix multiples…), calcule un score de risque
-            explicable et offre aux enseignants une chronologie claire — sans jamais stocker plus
-            que nécessaire.{% endblocktranslate %}
+            {% blocktranslate %}La plateforme collecte les événements de surveillance d'une session
+            d'évaluation en ligne — examens, tests d'emploi, certifications, concours… (changements
+            d'onglet, regard détourné, voix multiples…), calcule un score de risque explicable et
+            offre aux évaluateurs une chronologie claire — sans jamais stocker plus que nécessaire.{% endblocktranslate %}
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a href="{% url 'account_signup' %}" class="rounded-md bg-g-accent px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-g-accentHover">
-              {% translate "Créer un compte gratuitement" %}
+            <a href="{% url 'account_signup' %}" style="clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));" class="group relative inline-flex items-center gap-2 overflow-hidden bg-gradient-to-r from-[#1a73e8] via-[#2f8bff] to-[#5fd0ff] px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-[0_0_22px_rgba(47,139,255,0.45)] ring-1 ring-inset ring-white/25 transition duration-300 hover:shadow-[0_0_38px_rgba(95,208,255,0.7)]">
+              <span class="evasee-scan pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent" aria-hidden="true"></span>
+              <span class="relative">{% translate "Get Started" %}</span>
+              <svg class="relative h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h13M12 6l6 6-6 6"/>
+              </svg>
             </a>
             <a href="{% url 'account_login' %}" class="rounded-md border border-g-700 px-5 py-3 text-sm font-semibold text-g-text transition hover:bg-g-850">
               {% translate "Se connecter" %}
@@ -80,11 +102,11 @@
               <span class="h-3 w-3 rounded-full bg-red-500/80"></span>
               <span class="h-3 w-3 rounded-full bg-amber-400/80"></span>
               <span class="h-3 w-3 rounded-full bg-green-500/80"></span>
-              <span class="ml-2 font-mono text-xs text-g-faint">page-examen.html</span>
+              <span class="ml-2 font-mono text-xs text-g-faint">page-evaluation.html</span>
             </div>
-            <pre class="overflow-x-auto bg-g-950 px-4 py-4 text-xs leading-relaxed"><code>{% filter highlight:"html" %}<script src="https://cdn.examsdk.dev/v1/examsdk.js"></script>
+            <pre class="overflow-x-auto bg-g-950 px-4 py-4 text-xs leading-relaxed"><code>{% filter highlight:"html" %}<script src="https://cdn.evasee.dev/v1/evasee.js"></script>
 <script>
-  ExamSDK.init({
+  EvaSee.init({
     publicKey: "pk_live_••••••••",
     sessionId: "SES-2024-S1"
   });
@@ -97,7 +119,7 @@
               <p class="min-w-0 truncate text-sm font-semibold text-g-text">{% translate "Session MATH-2024-S1" %}</p>
               <span class="shrink-0 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-300">{% translate "Risque élevé" %}</span>
             </div>
-            <p class="mt-1 text-xs text-g-faint">{% translate "étudiant etu-1042 · 1 h 12 min" %}</p>
+            <p class="mt-1 text-xs text-g-faint">{% translate "candidat cdt-1042 · 1 h 12 min" %}</p>
             <ul class="mt-4 space-y-2 text-sm">
               <li class="flex items-start gap-2 rounded-md border border-g-800 border-l-4 border-l-red-500 bg-g-850 p-2">
                 <span class="mt-0.5 h-2 w-2 flex-none rounded-full bg-red-500"></span>
@@ -119,10 +141,10 @@
   </section>
 
   {# --- Fonctionnalités --- #}
-  <section id="fonctionnalites" class="border-t border-g-800 bg-g-900/40 py-16 sm:py-20">
+  <section id="fonctionnalites" class="border-t border-g-800 py-16 sm:py-20">
     <div class="mx-auto max-w-6xl px-4">
       <h2 class="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{% translate "Tout ce qu'il faut pour surveiller sereinement" %}</h2>
-      <p class="mt-3 max-w-2xl text-g-muted">{% translate "Un SDK embarqué dans la page d'examen et une extension navigateur alimentent un tableau de bord unique." %}</p>
+      <p class="mt-3 max-w-2xl text-g-muted">{% translate "Un SDK embarqué dans la page d'évaluation et une extension navigateur alimentent un tableau de bord unique." %}</p>
       {# Chaque carte : icône + titre + description + illustration (SVG en ligne, fond pointillé). #}
       <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
@@ -139,8 +161,8 @@
             <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Perte de focus détectée dans le navigateur" %}'>
               <rect x="66" y="18" width="228" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
               <circle cx="84" cy="34" r="3" fill="#ef4444" opacity="0.8"/><circle cx="96" cy="34" r="3" fill="#fbbf24" opacity="0.8"/><circle cx="108" cy="34" r="3" fill="#34d399" opacity="0.8"/>
-              <rect x="124" y="25" width="62" height="18" rx="6" fill="#292a2d"/>
-              <text x="134" y="38" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">examen</text>
+              <rect x="124" y="25" width="74" height="18" rx="6" fill="#292a2d"/>
+              <text x="134" y="38" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">évaluation</text>
               <rect x="76" y="50" width="208" height="13" rx="4" fill="#1b1c1e" stroke="#303134"/>
               <rect x="84" y="54" width="72" height="4" rx="2" fill="#3c4043"/>
               <rect x="76" y="72" width="150" height="5" rx="2.5" fill="#303134"/>
@@ -411,7 +433,7 @@
               </svg>
             </span>
             <h3 class="mt-4 text-lg font-semibold text-white">{% translate "Surveillance navigateur" %}</h3>
-            <p class="mt-2 text-sm text-g-muted">{% translate "L'extension observe l'onglet d'examen : perte de focus, sortie du plein écran, copier-coller et outils de développement sont signalés." %}</p>
+            <p class="mt-2 text-sm text-g-muted">{% translate "L'extension observe l'onglet d'évaluation : perte de focus, sortie du plein écran, copier-coller et outils de développement sont signalés." %}</p>
           </div>
           <div class="relative h-60 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
             <svg viewBox="0 0 360 200" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Changement d\'onglet détecté par l\'extension navigateur" %}'>
@@ -420,7 +442,7 @@
               <circle cx="76" cy="44" r="3.4" fill="#fbbf24" opacity="0.8"/>
               <circle cx="88" cy="44" r="3.4" fill="#34d399" opacity="0.8"/>
               <rect x="104" y="34" width="76" height="20" rx="6" fill="#292a2d"/>
-              <text x="114" y="48" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">examen</text>
+              <text x="114" y="48" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">évaluation</text>
               <rect x="186" y="34" width="76" height="20" rx="6" fill="#ef4444" opacity="0.16" stroke="#ef4444" stroke-opacity="0.5"/>
               <path d="M196 40l7 8M203 40l-7 8" stroke="#ef4444" stroke-width="1.6"/>
               <text x="210" y="48" fill="#f87171" font-family="ui-monospace, monospace" font-size="9">onglet</text>
@@ -471,7 +493,7 @@
               <text x="80" y="117" fill="#5f6368" font-family="ui-monospace, monospace" font-size="9">••••••••••••••</text>
               <rect x="232" y="64" width="56" height="18" rx="9" fill="#1a73e8" opacity="0.16" stroke="#1a73e8" stroke-opacity="0.5"/>
               <circle cx="243" cy="73" r="2.6" fill="#8ab4f8"/>
-              <text x="250" y="76" fill="#8ab4f8" font-family="ui-monospace, monospace" font-size="8">examen.fr</text>
+              <text x="250" y="76" fill="#8ab4f8" font-family="ui-monospace, monospace" font-size="8">eval.fr</text>
               <circle cx="272" cy="44" r="14" fill="#34d399" opacity="0.14"/>
               <path d="M266 44l4 4 8-8" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -481,7 +503,7 @@
           <div class="p-5">
             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">2</span>
             <h3 class="mt-3 font-semibold text-g-text">{% translate "Intégrez le SDK" %}</h3>
-            <p class="mt-2 text-sm text-g-muted">{% translate "Une ligne à ajouter dans votre page d'examen ; l'extension complète la couverture." %}</p>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Une ligne à ajouter dans votre page d'évaluation ; l'extension complète la couverture." %}</p>
           </div>
           <div class="relative h-44 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
             <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Extrait de code intégrant le SDK" %}'>
@@ -489,8 +511,8 @@
               <circle cx="66" cy="34" r="3.4" fill="#ef4444" opacity="0.8"/>
               <circle cx="78" cy="34" r="3.4" fill="#fbbf24" opacity="0.8"/>
               <circle cx="90" cy="34" r="3.4" fill="#34d399" opacity="0.8"/>
-              <text x="64" y="66" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="10">&lt;script src="…/examsdk.js"&gt;</text>
-              <text x="64" y="84" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10"><tspan fill="#8ab4f8">ExamSDK.init</tspan>({</text>
+              <text x="64" y="66" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="10">&lt;script src="…/evasee.js"&gt;</text>
+              <text x="64" y="84" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10"><tspan fill="#8ab4f8">EvaSee.init</tspan>({</text>
               <text x="80" y="102" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">publicKey: <tspan fill="#fbbf24">"pk_live_…"</tspan></text>
               <text x="64" y="120" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">});</text>
               <rect x="232" y="106" width="66" height="18" rx="9" fill="#34d399" opacity="0.14" stroke="#34d399" stroke-opacity="0.4"/>
@@ -531,11 +553,111 @@
     </div>
   </section>
 
+  {# --- Contact : formulaire futuriste vers l'équipe dev --- #}
+  <section id="contact" class="relative overflow-hidden border-t border-g-800 py-16 sm:py-20">
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-[radial-gradient(55%_100%_at_50%_0%,rgba(47,139,255,0.16),transparent)]" aria-hidden="true"></div>
+    <div class="relative mx-auto max-w-6xl px-4">
+      <div class="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-start">
+
+        {# Colonne gauche : accroche + canaux #}
+        <div>
+          <p class="inline-flex items-center gap-2 rounded-full border border-g-800 bg-g-900/70 px-3 py-1 text-xs font-medium text-g-muted backdrop-blur">
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-g-blue"></span>
+            {% translate "Canal direct vers l'équipe de développement" %}
+          </p>
+          <h2 class="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{% translate "Contactez l'équipe EvaSee" %}</h2>
+          <p class="mt-3 max-w-lg text-g-muted">{% translate "Une question technique, un projet d'intégration, une demande de démonstration ? Écrivez-nous : votre message est transmis directement aux développeurs." %}</p>
+
+          <ul class="mt-8 space-y-3 text-sm">
+            <li class="flex items-center gap-3 text-g-muted">
+              <span class="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+              </span>
+              {% translate "Réponse sous 24 à 48 heures ouvrées" %}
+            </li>
+            <li class="flex items-center gap-3 text-g-muted">
+              <span class="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+              </span>
+              {% translate "Assistance technique et accompagnement à l'intégration" %}
+            </li>
+          </ul>
+        </div>
+
+        {# Colonne droite : carte formulaire « console » futuriste #}
+        <div class="relative overflow-hidden rounded-2xl border border-g-800 bg-g-900/70 p-6 backdrop-blur sm:p-8">
+          <svg viewBox="0 0 600 600" preserveAspectRatio="none" class="pointer-events-none absolute inset-0 h-full w-full" fill="none" aria-hidden="true">
+            <g stroke="#8ab4f8" stroke-opacity="0.08" stroke-width="1">
+              <path d="M0 100h600M0 200h600M0 300h600M0 400h600M0 500h600"/>
+              <path d="M100 0v600M200 0v600M300 0v600M400 0v600M500 0v600"/>
+            </g>
+            <g stroke="#bfe0ff" stroke-opacity="0.4" stroke-width="2.5" fill="none">
+              <path d="M14 44V14h30M556 14h30v30M14 556v30h30M586 556v30h-30"/>
+            </g>
+            <rect x="0" y="0" width="600" height="2.5" fill="url(#evasee-beam)"/>
+          </svg>
+
+          <div class="relative">
+            <p class="font-mono text-[0.65rem] uppercase tracking-[0.4em] text-g-blue/80">{% translate "Transmission sécurisée" %}</p>
+
+            <div class="mt-4">{% include "components/messages.html" %}</div>
+
+            <form method="post" action="{% url 'root' %}#contact" class="mt-4 space-y-5" novalidate>
+              {% csrf_token %}
+              {# Pot de miel anti-robot : invisible, ne doit jamais être rempli par un humain. #}
+              <div class="hidden" aria-hidden="true">{{ contact_form.company }}</div>
+
+              {% if contact_form.non_field_errors %}
+                <div class="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300" role="alert">
+                  {% for error in contact_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+              {% endif %}
+
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label for="{{ contact_form.name.id_for_label }}" class="block font-mono text-[0.65rem] uppercase tracking-[0.3em] text-g-blue/80">{{ contact_form.name.label }}</label>
+                  <div class="mt-2">{{ contact_form.name }}</div>
+                  {% for error in contact_form.name.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                  <label for="{{ contact_form.email.id_for_label }}" class="block font-mono text-[0.65rem] uppercase tracking-[0.3em] text-g-blue/80">{{ contact_form.email.label }}</label>
+                  <div class="mt-2">{{ contact_form.email }}</div>
+                  {% for error in contact_form.email.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+                </div>
+              </div>
+
+              <div>
+                <label for="{{ contact_form.subject.id_for_label }}" class="block font-mono text-[0.65rem] uppercase tracking-[0.3em] text-g-blue/80">{{ contact_form.subject.label }}</label>
+                <div class="mt-2">{{ contact_form.subject }}</div>
+                {% for error in contact_form.subject.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+              </div>
+
+              <div>
+                <label for="{{ contact_form.message.id_for_label }}" class="block font-mono text-[0.65rem] uppercase tracking-[0.3em] text-g-blue/80">{{ contact_form.message.label }}</label>
+                <div class="mt-2">{{ contact_form.message }}</div>
+                {% for error in contact_form.message.errors %}<p class="mt-1 text-xs text-red-300" role="alert">{{ error }}</p>{% endfor %}
+              </div>
+
+              <button type="submit" style="clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));" class="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden bg-gradient-to-r from-[#1a73e8] via-[#2f8bff] to-[#5fd0ff] px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-[0_0_22px_rgba(47,139,255,0.45)] ring-1 ring-inset ring-white/25 transition duration-300 hover:shadow-[0_0_38px_rgba(95,208,255,0.7)]">
+                <span class="evasee-scan pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent" aria-hidden="true"></span>
+                <span class="relative">{% translate "Envoyer le message" %}</span>
+                <svg class="relative h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 12h15M13 6l6 6-6 6"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   {# --- Bandeau d'appel à l'action --- #}
-  <section class="border-t border-g-800 bg-g-900">
+  <section class="border-t border-g-800">
     <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-12 text-center sm:flex-row sm:text-left">
       <div>
-        <h2 class="text-xl font-semibold text-white sm:text-2xl">{% translate "Prêt à surveiller votre premier examen ?" %}</h2>
+        <h2 class="text-xl font-semibold text-white sm:text-2xl">{% translate "Prêt à surveiller votre première évaluation ?" %}</h2>
         <p class="mt-1 text-sm text-g-muted">{% translate "Créer un compte ne prend qu'une minute." %}</p>
       </div>
       <a href="{% url 'account_signup' %}" class="rounded-md bg-g-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-g-accentHover">
@@ -549,7 +671,7 @@
     <div class="mx-auto grid max-w-6xl gap-8 px-4 sm:grid-cols-[1.5fr_1fr_1fr]">
       <div>
         <p class="text-sm font-semibold text-g-text">{{ site_branding.site_name }}</p>
-        <p class="mt-2 max-w-xs text-sm text-g-faint">{% translate "Surveillance d'examens en ligne, explicable et respectueuse des données." %}</p>
+        <p class="mt-2 max-w-xs text-sm text-g-faint">{% translate "Surveillance d'évaluations en ligne, explicable et respectueuse des données." %}</p>
       </div>
       <div>
         <p class="text-xs font-semibold uppercase tracking-wider text-g-faint">{% translate "Produit" %}</p>

@@ -195,7 +195,10 @@ LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "dashboard:home"
 ACCOUNT_LOGOUT_REDIRECT_URL = "account_login"
 # Email de vérification envoyé en console en dev (voir dev.py) ; provider réel en prod.
-ACCOUNT_EMAIL_SUBJECT_PREFIX = "[ExamSDK] "
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[EvaSee] "
+
+# Adresse de l'équipe qui reçoit les messages du formulaire de contact de la page d'accueil.
+CONTACT_EMAIL = env("CONTACT_EMAIL", default="contact@evasee.local")
 
 # Formulaires allauth rebranchés sur notre mixin Tailwind (apparence cohérente de tous les
 # champs sans réécrire chaque gabarit). Voir apps/accounts/forms.py.
@@ -256,7 +259,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "ExamSDK API",
+    "TITLE": "EvaSee API",
     "DESCRIPTION": (
         "API JWT (clients développeur) et API machine HMAC (SDK / LMS). "
         "Le tableau de bord web n'est pas documenté ici (vues templates, session Django)."

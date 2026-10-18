@@ -26,8 +26,8 @@ from apps.core.views import LandingView
 from apps.public.views import HealthView
 
 # En-tête du Django Admin (06_FRONTEND_GUIDE.md §8.11) — seule personnalisation de l'admin.
-admin.site.site_header = "ExamSDK — Administration"
-admin.site.site_title = "ExamSDK"
+admin.site.site_header = "EvaSee — Administration"
+admin.site.site_title = "EvaSee"
 
 urlpatterns = [
     # Racine : page d'accueil PUBLIQUE pour un visiteur, redirection vers le dashboard si connecté.
