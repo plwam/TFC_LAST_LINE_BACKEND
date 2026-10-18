@@ -17,7 +17,7 @@
 
   {# --- Barre de navigation (translucide, collante) --- #}
   <header class="sticky top-0 z-40 border-b border-g-800 bg-g-950/80 backdrop-blur">
-    <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5" aria-label="{% translate 'Navigation principale' %}">
+    <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 gap-y-2 px-4 py-3.5" aria-label="{% translate 'Navigation principale' %}">
       <a href="{% url 'root' %}" class="flex items-center gap-2">
         {% if site_branding.logo %}
           <img src="{{ site_branding.logo.url }}" alt="{{ site_branding.site_name }}" class="h-8 w-auto">
@@ -27,6 +27,7 @@
       </a>
       <div class="hidden items-center gap-7 text-sm font-medium text-g-muted sm:flex">
         <a href="#fonctionnalites" class="transition hover:text-g-text">{% translate "Fonctionnalités" %}</a>
+        <a href="#surveillance" class="transition hover:text-g-text">{% translate "Surveillance" %}</a>
         <a href="#fonctionnement" class="transition hover:text-g-text">{% translate "Fonctionnement" %}</a>
         <a href="{% url 'docs:swagger' %}" class="transition hover:text-g-text">{% translate "Documentation" %}</a>
       </div>
@@ -42,7 +43,7 @@
     <div class="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgba(26,115,232,0.18),transparent)]" aria-hidden="true"></div>
     <div class="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:pt-24">
       <div class="grid items-start gap-12 lg:grid-cols-[1.05fr_1fr]">
-        <div>
+        <div class="min-w-0">
           <p class="inline-flex items-center gap-2 rounded-full border border-g-800 bg-g-900 px-3 py-1 text-xs font-medium text-g-muted">
             <span class="h-1.5 w-1.5 rounded-full bg-g-blue"></span>
             {% translate "Surveillance d'examens · SDK + extension" %}
@@ -73,7 +74,7 @@
         {% comment %} Colonne d'aperçu : cadre « fenêtre d'éditeur » (pastilles + nom de
            fichier) autour d'un bloc de code coloré par highlight.js — même traitement que
            l'onglet Intégration. {% endcomment %}
-        <div class="space-y-4">
+        <div class="min-w-0 space-y-4">
           <div class="overflow-hidden rounded-xl border border-g-800 bg-g-900 shadow-2xl shadow-black/40">
             <div class="flex items-center gap-1.5 border-b border-g-800 bg-g-900 px-4 py-3">
               <span class="h-3 w-3 rounded-full bg-red-500/80"></span>
@@ -92,9 +93,9 @@
 
           {# Aperçu factice de l'interface — purement illustratif, aucune donnée réelle. #}
           <div class="rounded-xl border border-g-800 bg-g-900 p-4 shadow-2xl shadow-black/40">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-semibold text-g-text">{% translate "Session MATH-2024-S1" %}</p>
-              <span class="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-300">{% translate "Risque élevé" %}</span>
+            <div class="flex items-center justify-between gap-2">
+              <p class="min-w-0 truncate text-sm font-semibold text-g-text">{% translate "Session MATH-2024-S1" %}</p>
+              <span class="shrink-0 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-300">{% translate "Risque élevé" %}</span>
             </div>
             <p class="mt-1 text-xs text-g-faint">{% translate "étudiant etu-1042 · 1 h 12 min" %}</p>
             <ul class="mt-4 space-y-2 text-sm">
@@ -122,31 +123,327 @@
     <div class="mx-auto max-w-6xl px-4">
       <h2 class="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{% translate "Tout ce qu'il faut pour surveiller sereinement" %}</h2>
       <p class="mt-3 max-w-2xl text-g-muted">{% translate "Un SDK embarqué dans la page d'examen et une extension navigateur alimentent un tableau de bord unique." %}</p>
+      {# Chaque carte : icône + titre + description + illustration (SVG en ligne, fond pointillé). #}
       <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "Détection navigateur" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Changements d'onglet, perte de focus, copier-coller, sortie plein écran, outils de développement." %}</p>
-        </div>
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "Analyse vision & audio" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Absence ou multiplicité de visages, regard détourné, objet interdit, voix multiples." %}</p>
-        </div>
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "Score de risque explicable" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Un indicateur d'aide à la décision, jamais une preuve : nombre, type et confiance des événements." %}</p>
-        </div>
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "Chronologie lisible" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Chaque événement technique est traduit en une phrase en français, filtrable et horodatée." %}</p>
-        </div>
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "Journal immuable" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Un événement est une preuve : jamais modifié ni supprimé. Les actions sensibles sont auditées." %}</p>
-        </div>
-        <div class="rounded-xl border border-g-800 bg-g-900 p-5 transition hover:border-g-700">
-          <h3 class="font-semibold text-g-text">{% translate "API machine signée" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Créez une session, envoyez des lots d'événements et clôturez-la via une API HMAC documentée." %}</p>
-        </div>
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 6.4h.01M10 6.4h.01"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Détection navigateur" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Changements d'onglet, perte de focus, copier-coller, sortie plein écran, outils de développement." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Perte de focus détectée dans le navigateur" %}'>
+              <rect x="66" y="18" width="228" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <circle cx="84" cy="34" r="3" fill="#ef4444" opacity="0.8"/><circle cx="96" cy="34" r="3" fill="#fbbf24" opacity="0.8"/><circle cx="108" cy="34" r="3" fill="#34d399" opacity="0.8"/>
+              <rect x="124" y="25" width="62" height="18" rx="6" fill="#292a2d"/>
+              <text x="134" y="38" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">examen</text>
+              <rect x="76" y="50" width="208" height="13" rx="4" fill="#1b1c1e" stroke="#303134"/>
+              <rect x="84" y="54" width="72" height="4" rx="2" fill="#3c4043"/>
+              <rect x="76" y="72" width="150" height="5" rx="2.5" fill="#303134"/>
+              <rect x="76" y="84" width="180" height="5" rx="2.5" fill="#303134"/>
+              <rect x="76" y="96" width="110" height="5" rx="2.5" fill="#303134"/>
+              <rect x="76" y="110" width="134" height="16" rx="6" fill="#ef4444" opacity="0.14" stroke="#ef4444" stroke-opacity="0.4"/>
+              <circle cx="87" cy="118" r="3.4" fill="#ef4444"/>
+              <text x="96" y="121" fill="#f87171" font-family="ui-monospace, monospace" font-size="9">focus perdu</text>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Analyse vision & audio" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Absence ou multiplicité de visages, regard détourné, objet interdit, voix multiples." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Analyse du flux vidéo et audio de la session" %}'>
+              <rect x="60" y="18" width="140" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <circle cx="130" cy="66" r="22" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <path d="M102 114c5-20 15-30 28-30s23 10 28 30" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <g stroke="#8ab4f8" stroke-width="2" stroke-linecap="round">
+                <path d="M108 44v7M108 44h7"/><path d="M152 44h-7M152 44v7"/><path d="M108 96v-7M108 96h7"/><path d="M152 96h-7M152 96v-7"/>
+              </g>
+              <circle cx="122" cy="62" r="1.8" fill="#8ab4f8"/><circle cx="138" cy="62" r="1.8" fill="#8ab4f8"/><circle cx="130" cy="72" r="1.8" fill="#8ab4f8"/>
+              <g stroke="#8ab4f8" stroke-width="3" stroke-linecap="round">
+                <line x1="222" y1="68" x2="222" y2="80"/><line x1="234" y1="58" x2="234" y2="90"/>
+                <line x1="246" y1="48" x2="246" y2="100"/><line x1="258" y1="62" x2="258" y2="86"/>
+                <line x1="270" y1="54" x2="270" y2="94"/><line x1="282" y1="68" x2="282" y2="80"/>
+                <line x1="294" y1="60" x2="294" y2="88"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 4a8 8 0 0 0-8 8 8 8 0 0 0 2.3 5.6"/><path d="M20 12a8 8 0 0 0-8-8"/><path d="M20 12a8 8 0 0 1-2.3 5.6"/><path d="M12 12l4-3"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Score de risque explicable" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Un indicateur d'aide à la décision, jamais une preuve : nombre, type et confiance des événements." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Score de risque et répartition des événements" %}'>
+              <rect x="60" y="18" width="240" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <circle cx="118" cy="75" r="30" fill="none" stroke="#292a2d" stroke-width="7"/>
+              <circle cx="118" cy="75" r="30" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" stroke-dasharray="135 189" transform="rotate(-90 118 75)"/>
+              <text x="118" y="80" fill="#e8eaed" font-size="18" font-weight="bold" text-anchor="middle" font-family="ui-sans-serif, sans-serif">72</text>
+              <text x="118" y="94" fill="#80868b" font-size="8" text-anchor="middle" font-family="ui-monospace, monospace">risque</text>
+              <g font-family="ui-monospace, monospace" font-size="8" fill="#9aa0a6">
+                <circle cx="180" cy="52" r="4" fill="#ef4444"/><text x="192" y="55">navigateur</text>
+                <circle cx="180" cy="76" r="4" fill="#818cf8"/><text x="192" y="79">regard</text>
+                <circle cx="180" cy="100" r="4" fill="#fbbf24"/><text x="192" y="103">audio</text>
+              </g>
+              <rect x="180" y="114" width="100" height="6" rx="3" fill="#292a2d"/>
+              <rect x="180" y="114" width="68" height="6" rx="3" fill="#ef4444" opacity="0.7"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="5" cy="6" r="1.4" fill="currentColor"/><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="5" cy="18" r="1.4" fill="currentColor"/>
+                <path d="M9 6h11M9 12h11M9 18h11"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Chronologie lisible" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Chaque événement technique est traduit en une phrase en français, filtrable et horodatée." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Chronologie horodatée des événements d\'une session" %}'>
+              <line x1="92" y1="26" x2="92" y2="126" stroke="#303134" stroke-width="2"/>
+              <circle cx="92" cy="40" r="6" fill="#ef4444"/>
+              <circle cx="92" cy="70" r="6" fill="#818cf8"/>
+              <circle cx="92" cy="100" r="6" fill="#8ab4f8"/>
+              <circle cx="92" cy="126" r="6" fill="#5f6368"/>
+              <rect x="110" y="34" width="120" height="6" rx="3" fill="#3c4043"/><rect x="110" y="46" width="70" height="5" rx="2.5" fill="#292a2d"/>
+              <rect x="110" y="64" width="140" height="6" rx="3" fill="#3c4043"/><rect x="110" y="76" width="90" height="5" rx="2.5" fill="#292a2d"/>
+              <rect x="110" y="94" width="130" height="6" rx="3" fill="#3c4043"/><rect x="110" y="106" width="60" height="5" rx="2.5" fill="#292a2d"/>
+              <rect x="252" y="32" width="46" height="13" rx="6.5" fill="#292a2d"/><text x="259" y="42" fill="#80868b" font-family="ui-monospace, monospace" font-size="7">0:12</text>
+              <rect x="252" y="62" width="46" height="13" rx="6.5" fill="#292a2d"/><text x="259" y="72" fill="#80868b" font-family="ui-monospace, monospace" font-size="7">0:48</text>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6z"/><path d="M9 12l2 2 4-4"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Journal immuable" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Un événement est une preuve : jamais modifié ni supprimé. Les actions sensibles sont auditées." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Journal scellé et vérifiable" %}'>
+              <rect x="60" y="18" width="240" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <path d="M104 40l22 9v18c0 16-11 26-22 30-11-4-22-14-22-30V49z" fill="#1a73e8" opacity="0.14" stroke="#1a73e8" stroke-opacity="0.5"/>
+              <path d="M96 66l6 6 12-12" stroke="#8ab4f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="150" y="42" width="120" height="6" rx="3" fill="#3c4043"/><rect x="150" y="56" width="80" height="5" rx="2.5" fill="#292a2d"/>
+              <rect x="150" y="76" width="120" height="6" rx="3" fill="#3c4043"/><rect x="150" y="90" width="96" height="5" rx="2.5" fill="#292a2d"/>
+              <rect x="150" y="108" width="74" height="14" rx="7" fill="#34d399" opacity="0.14" stroke="#34d399" stroke-opacity="0.4"/>
+              <text x="160" y="118" fill="#34d399" font-family="ui-monospace, monospace" font-size="8">scellé</text>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3"/><path d="M13 15h4"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "API machine signée" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Créez une session, envoyez des lots d'événements et clôturez-la via une API HMAC documentée." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Requête d\'API signée par HMAC" %}'>
+              <rect x="56" y="18" width="248" height="114" rx="12" fill="#1b1c1e" stroke="#303134" stroke-width="2"/>
+              <circle cx="74" cy="34" r="3.2" fill="#ef4444" opacity="0.8"/><circle cx="85" cy="34" r="3.2" fill="#fbbf24" opacity="0.8"/><circle cx="96" cy="34" r="3.2" fill="#34d399" opacity="0.8"/>
+              <text x="72" y="64" fill="#8ab4f8" font-family="ui-monospace, monospace" font-size="10">POST <tspan fill="#9aa0a6">/api/v1/machine/events/</tspan></text>
+              <text x="72" y="82" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">X-Signature: <tspan fill="#fbbf24">hmac-sha256…</tspan></text>
+              <text x="72" y="100" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">X-Timestamp: <tspan fill="#fbbf24">1729…</tspan></text>
+              <rect x="72" y="108" width="130" height="16" rx="6" fill="#34d399" opacity="0.14" stroke="#34d399" stroke-opacity="0.4"/>
+              <circle cx="83" cy="116" r="3" fill="#34d399"/>
+              <text x="92" y="119" fill="#34d399" font-family="ui-monospace, monospace" font-size="8">202 · accepté</text>
+            </svg>
+          </div>
+        </article>
+
+        <article class="group overflow-hidden rounded-xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-5">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-indigo-300">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="7" y="7" width="10" height="10" rx="2"/>
+                <path d="M9 3v2M12 3v2M15 3v2M9 19v2M12 19v2M15 19v2M3 9h2M3 12h2M3 15h2M19 9h2M19 12h2M19 15h2"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 font-semibold text-g-text">{% translate "Surveillance par IA" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Des modèles d'intelligence artificielle recoupent vision, audio et navigateur pour repérer les anomalies et prioriser les sessions à revoir." %}</p>
+          </div>
+          <div class="relative h-40 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Réseau de neurones reliant les signaux de surveillance" %}'>
+              <rect x="56" y="18" width="248" height="114" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <g stroke="#818cf8" stroke-width="1" opacity="0.55">
+                <line x1="104" y1="50" x2="168" y2="40"/><line x1="104" y1="50" x2="168" y2="75"/><line x1="104" y1="50" x2="168" y2="110"/>
+                <line x1="104" y1="75" x2="168" y2="40"/><line x1="104" y1="75" x2="168" y2="75"/><line x1="104" y1="75" x2="168" y2="110"/>
+                <line x1="104" y1="100" x2="168" y2="40"/><line x1="104" y1="100" x2="168" y2="75"/><line x1="104" y1="100" x2="168" y2="110"/>
+                <line x1="168" y1="40" x2="230" y2="75"/><line x1="168" y1="75" x2="230" y2="75"/><line x1="168" y1="110" x2="230" y2="75"/>
+              </g>
+              <g fill="#1a73e8">
+                <circle cx="104" cy="50" r="7"/><circle cx="104" cy="75" r="7"/><circle cx="104" cy="100" r="7"/>
+                <circle cx="168" cy="40" r="7"/><circle cx="168" cy="75" r="7"/><circle cx="168" cy="110" r="7"/>
+              </g>
+              <circle cx="230" cy="75" r="10" fill="none" stroke="#8ab4f8" stroke-width="2"/>
+              <circle cx="230" cy="75" r="4" fill="#8ab4f8"/>
+              <path d="M272 38l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#fbbf24" opacity="0.9"/>
+              <rect x="248" y="104" width="48" height="14" rx="7" fill="#818cf8" opacity="0.16" stroke="#818cf8" stroke-opacity="0.4"/>
+              <text x="258" y="114" fill="#a5b4fc" font-family="ui-monospace, monospace" font-size="8">IA</text>
+            </svg>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {% comment %} --- Surveillance : trois signaux illustrés (vision, comportement, navigateur).
+     Demande utilisateur : une section d'images illustrant le proctoring. Les visuels sont des
+     SVG EN LIGNE (aucune image ni ressource tierce à charger) — même logique que la coloration
+     Pygments côté serveur : rendu garanti partout, hors-ligne, sans requête externe ni donnée
+     réelle. Chaque panneau reprend le fond en pointillés de la référence de design. {% endcomment %}
+  <section id="surveillance" class="border-t border-g-800 py-16 sm:py-20">
+    <div class="mx-auto max-w-6xl px-4">
+      <h2 class="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{% translate "Une surveillance à 360°" %}</h2>
+      <p class="mt-3 max-w-2xl text-g-muted">{% translate "Trois signaux complémentaires se recoupent pour transformer un flux brut en une lecture claire de la session." %}</p>
+
+      <div class="mt-10 grid gap-6 lg:grid-cols-3">
+
+        {# --- Carte 1 : vision par ordinateur --- #}
+        <article class="group overflow-hidden rounded-2xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-6">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 8V5a2 2 0 0 1 2-2h3"/><path d="M22 8V5a2 2 0 0 0-2-2h-3"/>
+                <path d="M2 16v3a2 2 0 0 0 2 2h3"/><path d="M22 16v3a2 2 0 0 1-2 2h-3"/>
+                <circle cx="12" cy="11" r="3"/><path d="M6.5 18a5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 text-lg font-semibold text-white">{% translate "Vision par ordinateur" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "La webcam est analysée localement : nombre de visages, position, présence d'un objet interdit. Aucune image n'est conservée au-delà du nécessaire." %}</p>
+          </div>
+          <div class="relative h-60 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 200" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Détection d\'un visage dans le flux de la webcam" %}'>
+              <rect x="60" y="24" width="240" height="152" rx="14" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <circle cx="180" cy="96" r="30" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <path d="M128 176c6-34 26-52 52-52s46 18 52 52" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <g stroke="#8ab4f8" stroke-width="2.4" stroke-linecap="round">
+                <path d="M146 60v9M146 60h9"/><path d="M214 60h-9M214 60v9"/>
+                <path d="M146 132v-9M146 132h9"/><path d="M214 132h-9M214 132v-9"/>
+              </g>
+              <g fill="#8ab4f8">
+                <circle cx="168" cy="88" r="1.9"/><circle cx="192" cy="88" r="1.9"/>
+                <circle cx="180" cy="100" r="1.9"/><circle cx="172" cy="110" r="1.6"/><circle cx="188" cy="110" r="1.6"/>
+              </g>
+              <line x1="62" y1="110" x2="298" y2="110" stroke="#8ab4f8" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>
+              <rect x="72" y="36" width="60" height="16" rx="4" fill="#1b1c1e" stroke="#303134"/>
+              <circle cx="82" cy="44" r="3" fill="#ef4444"/>
+              <text x="90" y="48" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="9">1 / 1</text>
+            </svg>
+            <span class="absolute bottom-3 right-3 rounded-full border border-g-800 bg-g-900/90 px-2.5 py-1 text-xs font-medium text-g-muted">{% translate "Flux traité en direct" %}</span>
+          </div>
+        </article>
+
+        {# --- Carte 2 : analyse du comportement --- #}
+        <article class="group overflow-hidden rounded-2xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-6">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-indigo-300">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 3.5a5.5 5.5 0 0 1 5.4 6.6"/><path d="M9 3.5A5.5 5.5 0 0 0 4 9c0 2.2 1.3 4.1 3.2 5V18h5v-2h2"/>
+                <circle cx="9.5" cy="9" r=".6" fill="currentColor"/><path d="M17 12l4-2-4-2"/><path d="M21 10v6"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 text-lg font-semibold text-white">{% translate "Analyse du comportement" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Regard détourné, tête tournée, voix multiples : des micro-signaux horodatés dessinent le comportement de l'étudiant au fil de l'épreuve." %}</p>
+          </div>
+          <div class="relative h-60 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 200" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Suivi du regard et de l\'orientation de la tête" %}'>
+              <circle cx="150" cy="92" r="32" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <path d="M122 150c8-20 18-30 28-30s20 10 28 30" fill="none" stroke="#5f6368" stroke-width="2"/>
+              <circle cx="140" cy="88" r="2.2" fill="#8ab4f8"/><circle cx="162" cy="88" r="2.2" fill="#8ab4f8"/>
+              <path d="M142 88c18 2 46-6 74-18" stroke="#818cf8" stroke-width="2" stroke-dasharray="5 4"/>
+              <path d="M216 70l12-6-4 12z" fill="#818cf8"/>
+              <circle cx="240" cy="62" r="12" fill="none" stroke="#818cf8" stroke-width="1.6"/>
+              <path d="M240 54v16M232 62h16" stroke="#818cf8" stroke-width="1.2" opacity="0.6"/>
+              <path d="M176 74a34 34 0 0 1 6 18" fill="none" stroke="#5f6368" stroke-width="1.4" stroke-dasharray="3 3"/>
+              <rect x="60" y="160" width="240" height="10" rx="5" fill="#292a2d"/>
+              <rect x="60" y="160" width="96" height="10" rx="5" fill="#34d399" opacity="0.75"/>
+              <rect x="156" y="160" width="52" height="10" fill="#fbbf24" opacity="0.8"/>
+              <rect x="208" y="160" width="46" height="10" fill="#ef4444" opacity="0.85"/>
+              <rect x="254" y="160" width="46" height="10" rx="5" fill="#34d399" opacity="0.75"/>
+              <line x1="210" y1="154" x2="210" y2="180" stroke="#e8eaed" stroke-width="1.4"/>
+              <text x="216" y="180" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="9">3,4 s</text>
+            </svg>
+            <span class="absolute bottom-3 right-3 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-300">{% translate "Regard détourné" %}</span>
+          </div>
+        </article>
+
+        {# --- Carte 3 : surveillance navigateur --- #}
+        <article class="group overflow-hidden rounded-2xl border border-g-800 bg-g-900 transition hover:border-g-700">
+          <div class="p-6">
+            <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-g-800 bg-g-850 text-g-blue">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 6.4h.01M10 6.4h.01"/>
+                <path d="M8 13l2.5 2.5L8 18M13 18h3.5"/>
+              </svg>
+            </span>
+            <h3 class="mt-4 text-lg font-semibold text-white">{% translate "Surveillance navigateur" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "L'extension observe l'onglet d'examen : perte de focus, sortie du plein écran, copier-coller et outils de développement sont signalés." %}</p>
+          </div>
+          <div class="relative h-60 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 200" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Changement d\'onglet détecté par l\'extension navigateur" %}'>
+              <rect x="48" y="28" width="264" height="144" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <circle cx="64" cy="44" r="3.4" fill="#ef4444" opacity="0.8"/>
+              <circle cx="76" cy="44" r="3.4" fill="#fbbf24" opacity="0.8"/>
+              <circle cx="88" cy="44" r="3.4" fill="#34d399" opacity="0.8"/>
+              <rect x="104" y="34" width="76" height="20" rx="6" fill="#292a2d"/>
+              <text x="114" y="48" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="9">examen</text>
+              <rect x="186" y="34" width="76" height="20" rx="6" fill="#ef4444" opacity="0.16" stroke="#ef4444" stroke-opacity="0.5"/>
+              <path d="M196 40l7 8M203 40l-7 8" stroke="#ef4444" stroke-width="1.6"/>
+              <text x="210" y="48" fill="#f87171" font-family="ui-monospace, monospace" font-size="9">onglet</text>
+              <rect x="58" y="64" width="244" height="18" rx="5" fill="#1b1c1e" stroke="#303134"/>
+              <circle cx="70" cy="73" r="3" fill="none" stroke="#5f6368"/>
+              <rect x="80" y="71" width="120" height="4" rx="2" fill="#3c4043"/>
+              <rect x="66" y="94" width="150" height="5" rx="2.5" fill="#303134"/>
+              <rect x="66" y="106" width="190" height="5" rx="2.5" fill="#303134"/>
+              <rect x="66" y="118" width="120" height="5" rx="2.5" fill="#303134"/>
+              <rect x="66" y="134" width="228" height="26" rx="6" fill="#ef4444" opacity="0.12" stroke="#ef4444" stroke-opacity="0.4"/>
+              <circle cx="80" cy="147" r="4" fill="#ef4444"/>
+              <rect x="92" y="145" width="150" height="5" rx="2.5" fill="#f87171" opacity="0.6"/>
+              <g stroke="#5f6368" stroke-width="1">
+                <line x1="70" y1="184" x2="300" y2="184"/>
+                <line x1="110" y1="180" x2="110" y2="188" stroke="#fbbf24"/>
+                <line x1="180" y1="180" x2="180" y2="188" stroke="#ef4444"/>
+                <line x1="250" y1="180" x2="250" y2="188" stroke="#5f6368"/>
+              </g>
+            </svg>
+            <span class="absolute bottom-3 right-3 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">{% translate "Focus perdu" %}</span>
+          </div>
+        </article>
+
       </div>
     </div>
   </section>
@@ -156,20 +453,79 @@
     <div class="mx-auto max-w-6xl px-4">
       <h2 class="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{% translate "Comment ça marche" %}</h2>
       <ol class="mt-10 grid gap-6 sm:grid-cols-3">
-        <li class="rounded-xl border border-g-800 bg-g-900 p-5">
-          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">1</span>
-          <h3 class="mt-3 font-semibold text-g-text">{% translate "Créez un projet" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Vous recevez une clé publique et une clé secrète, ainsi que le domaine à surveiller." %}</p>
+        <li class="overflow-hidden rounded-xl border border-g-800 bg-g-900">
+          <div class="p-5">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">1</span>
+            <h3 class="mt-3 font-semibold text-g-text">{% translate "Créez un projet" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Vous recevez une clé publique et une clé secrète, ainsi que le domaine à surveiller." %}</p>
+          </div>
+          <div class="relative h-44 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Création d\'un projet : clés et domaine" %}'>
+              <rect x="56" y="16" width="248" height="118" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <rect x="72" y="30" width="80" height="12" rx="4" fill="#292a2d"/>
+              <text x="72" y="58" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="9">Clé publique</text>
+              <rect x="72" y="64" width="150" height="18" rx="4" fill="#1b1c1e" stroke="#303134"/>
+              <text x="80" y="77" fill="#8ab4f8" font-family="ui-monospace, monospace" font-size="9">pk_live_8f2a4c…</text>
+              <text x="72" y="98" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="9">Clé secrète</text>
+              <rect x="72" y="104" width="150" height="18" rx="4" fill="#1b1c1e" stroke="#303134"/>
+              <text x="80" y="117" fill="#5f6368" font-family="ui-monospace, monospace" font-size="9">••••••••••••••</text>
+              <rect x="232" y="64" width="56" height="18" rx="9" fill="#1a73e8" opacity="0.16" stroke="#1a73e8" stroke-opacity="0.5"/>
+              <circle cx="243" cy="73" r="2.6" fill="#8ab4f8"/>
+              <text x="250" y="76" fill="#8ab4f8" font-family="ui-monospace, monospace" font-size="8">examen.fr</text>
+              <circle cx="272" cy="44" r="14" fill="#34d399" opacity="0.14"/>
+              <path d="M266 44l4 4 8-8" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </li>
-        <li class="rounded-xl border border-g-800 bg-g-900 p-5">
-          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">2</span>
-          <h3 class="mt-3 font-semibold text-g-text">{% translate "Intégrez le SDK" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Une ligne à ajouter dans votre page d'examen ; l'extension complète la couverture." %}</p>
+        <li class="overflow-hidden rounded-xl border border-g-800 bg-g-900">
+          <div class="p-5">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">2</span>
+            <h3 class="mt-3 font-semibold text-g-text">{% translate "Intégrez le SDK" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Une ligne à ajouter dans votre page d'examen ; l'extension complète la couverture." %}</p>
+          </div>
+          <div class="relative h-44 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Extrait de code intégrant le SDK" %}'>
+              <rect x="48" y="16" width="264" height="118" rx="12" fill="#1b1c1e" stroke="#303134" stroke-width="2"/>
+              <circle cx="66" cy="34" r="3.4" fill="#ef4444" opacity="0.8"/>
+              <circle cx="78" cy="34" r="3.4" fill="#fbbf24" opacity="0.8"/>
+              <circle cx="90" cy="34" r="3.4" fill="#34d399" opacity="0.8"/>
+              <text x="64" y="66" fill="#9aa0a6" font-family="ui-monospace, monospace" font-size="10">&lt;script src="…/examsdk.js"&gt;</text>
+              <text x="64" y="84" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10"><tspan fill="#8ab4f8">ExamSDK.init</tspan>({</text>
+              <text x="80" y="102" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">publicKey: <tspan fill="#fbbf24">"pk_live_…"</tspan></text>
+              <text x="64" y="120" fill="#e8eaed" font-family="ui-monospace, monospace" font-size="10">});</text>
+              <rect x="232" y="106" width="66" height="18" rx="9" fill="#34d399" opacity="0.14" stroke="#34d399" stroke-opacity="0.4"/>
+              <circle cx="244" cy="115" r="2.6" fill="#34d399"/>
+              <text x="250" y="118" fill="#34d399" font-family="ui-monospace, monospace" font-size="8">intégré</text>
+            </svg>
+          </div>
         </li>
-        <li class="rounded-xl border border-g-800 bg-g-900 p-5">
-          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">3</span>
-          <h3 class="mt-3 font-semibold text-g-text">{% translate "Analysez les sessions" %}</h3>
-          <p class="mt-2 text-sm text-g-muted">{% translate "Suivez le score de risque et la chronologie de chaque passation dans le tableau de bord." %}</p>
+        <li class="overflow-hidden rounded-xl border border-g-800 bg-g-900">
+          <div class="p-5">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-g-accent text-sm font-semibold text-white">3</span>
+            <h3 class="mt-3 font-semibold text-g-text">{% translate "Analysez les sessions" %}</h3>
+            <p class="mt-2 text-sm text-g-muted">{% translate "Suivez le score de risque et la chronologie de chaque passation dans le tableau de bord." %}</p>
+          </div>
+          <div class="relative h-44 border-t border-g-800 bg-g-950 bg-[radial-gradient(circle,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:18px_18px]">
+            <svg viewBox="0 0 360 150" class="absolute inset-0 h-full w-full" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label='{% translate "Tableau de bord d\'analyse d\'une session" %}'>
+              <rect x="48" y="16" width="264" height="118" rx="12" fill="#202124" stroke="#303134" stroke-width="2"/>
+              <rect x="60" y="26" width="74" height="15" rx="7.5" fill="#ef4444" opacity="0.15"/>
+              <text x="68" y="37" fill="#f87171" font-family="ui-monospace, monospace" font-size="8">Risque élevé</text>
+              <circle cx="104" cy="82" r="24" fill="none" stroke="#292a2d" stroke-width="6"/>
+              <circle cx="104" cy="82" r="24" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-dasharray="108 151" transform="rotate(-90 104 82)"/>
+              <text x="104" y="86" fill="#e8eaed" font-family="ui-sans-serif, sans-serif" font-size="15" font-weight="bold" text-anchor="middle">72</text>
+              <text x="104" y="98" fill="#80868b" font-family="ui-monospace, monospace" font-size="7" text-anchor="middle">risque</text>
+              <rect x="156" y="96" width="12" height="22" fill="#5f6368"/>
+              <rect x="176" y="80" width="12" height="38" fill="#8ab4f8"/>
+              <rect x="196" y="90" width="12" height="28" fill="#5f6368"/>
+              <rect x="216" y="66" width="12" height="52" fill="#ef4444"/>
+              <rect x="236" y="84" width="12" height="34" fill="#fbbf24"/>
+              <rect x="256" y="102" width="12" height="16" fill="#5f6368"/>
+              <line x1="60" y1="122" x2="300" y2="122" stroke="#3c4043" stroke-width="1"/>
+              <line x1="90" y1="118" x2="90" y2="126" stroke="#fbbf24"/>
+              <line x1="150" y1="118" x2="150" y2="126" stroke="#ef4444"/>
+              <line x1="230" y1="118" x2="230" y2="126" stroke="#5f6368"/>
+            </svg>
+          </div>
         </li>
       </ol>
     </div>
@@ -199,6 +555,7 @@
         <p class="text-xs font-semibold uppercase tracking-wider text-g-faint">{% translate "Produit" %}</p>
         <ul class="mt-3 space-y-2 text-sm text-g-muted">
           <li><a href="#fonctionnalites" class="transition hover:text-g-text">{% translate "Fonctionnalités" %}</a></li>
+          <li><a href="#surveillance" class="transition hover:text-g-text">{% translate "Surveillance" %}</a></li>
           <li><a href="#fonctionnement" class="transition hover:text-g-text">{% translate "Fonctionnement" %}</a></li>
           <li><a href="{% url 'docs:swagger' %}" class="transition hover:text-g-text">{% translate "Documentation" %}</a></li>
         </ul>

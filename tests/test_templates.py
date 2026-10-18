@@ -150,6 +150,9 @@ def test_project_list_exposes_lifecycle_actions_with_confirmation(client, develo
     assert reverse("dashboard:project-suspend", args=[project.id]) in html
     assert reverse("dashboard:project-disable", args=[project.id]) in html
     assert "data-confirm-title=" in html
+    # Garde-fou : un commentaire `{# … #}` multi-lignes n'est PAS un commentaire Django et
+    # s'afficherait en clair — on vérifie qu'aucun texte de commentaire ne fuit dans la page.
+    assert "Fenêtre d'alerte générique" not in html
 
 
 def test_project_overview_shows_lifecycle_actions(client, developer, project):

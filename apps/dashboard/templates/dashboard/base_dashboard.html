@@ -153,10 +153,10 @@
   </div>
 </dialog>
 
-{# Fenêtre d'alerte générique pour les actions dangereuses (suspendre / désactiver…).
+{% comment %} Fenêtre d'alerte générique pour les actions dangereuses (suspendre / désactiver…).
    Un formulaire portant `data-confirm` l'ouvre au lieu de se soumettre ; la confirmation
    déclenche la soumission. Le texte est surchargé par `data-confirm-title`/`-message`/`-label`.
-   Purement dissuasif : la validation réelle reste côté serveur. #}
+   Purement dissuasif : la validation réelle reste côté serveur. {% endcomment %}
 <dialog id="confirm-action-dialog" class="w-full max-w-md rounded-lg border border-g-700 bg-g-850 p-0 text-g-text backdrop:bg-black/60">
   <div class="p-6">
     <h2 class="text-lg font-semibold text-g-text" data-confirm-title>{% translate "Confirmer l'action" %}</h2>
