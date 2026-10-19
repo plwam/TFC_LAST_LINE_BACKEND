@@ -166,6 +166,20 @@ def test_project_overview_shows_lifecycle_actions(client, developer, project):
     assert "data-confirm-title=" in html
 
 
+def test_project_overview_shows_identity_and_integration_keys(client, developer, project):
+    """La vue d'ensemble expose les métadonnées du projet et la clé publique, sans le secret."""
+    client.force_login(developer.user)
+    html = client.get(
+        reverse("dashboard:project-detail", args=[project.id]), {"tab": "overview"}
+    ).content.decode()
+    assert "Domaine surveillé" in html
+    assert "Dernière modification" in html
+    # Clé publique et identifiant copiables ; le secret ne doit JAMAIS apparaître (UC-3).
+    assert project.public_key in html
+    assert str(project.id) in html
+    assert str(project.secret_key) not in html
+
+
 def test_project_detail_delete_requires_confirmation(client, developer, project):
     client.force_login(developer.user)
     html = client.get(reverse("dashboard:project-detail", args=[project.id])).content.decode()

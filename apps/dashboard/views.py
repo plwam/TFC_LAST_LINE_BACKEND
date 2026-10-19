@@ -26,6 +26,8 @@ from django.utils.translation import gettext_lazy
 from django.views.decorators.cache import never_cache
 from django.views.generic import ListView, TemplateView, View
 
+from urllib.parse import urlparse
+
 from apps.audit.models import AccessLog
 from apps.dashboard.forms import AccountForm, ConfirmByNameForm, ProjectForm
 from apps.dashboard.mixins import DeveloperRequiredMixin, WritableDeveloperRequiredMixin
@@ -233,6 +235,17 @@ class ProjectDetailView(DeveloperRequiredMixin, TemplateView):
                 session__project=project,
                 received_at__gte=timezone.now() - timedelta(days=30),
             ).count()
+            # Métadonnées affichées dans la carte « Informations » (06 §8.6.1) : l'hôte surveillé
+            # est le domaine que l'extension met en liste blanche (dérivé de `site_url`).
+            ctx["project_host"] = urlparse(project.site_url).hostname or ""
+            # Dernière activité = horodatage du dernier événement reçu pour ce projet (jamais
+            # l'horloge du serveur : on veut la preuve que le SDK a réellement émis).
+            ctx["last_event_at"] = (
+                Event.objects.filter(session__project=project)
+                .order_by("-received_at")
+                .values_list("received_at", flat=True)
+                .first()
+            )
         elif tab == "sessions":
             _fill_sessions_tab(ctx, project, self.request)
         elif tab == "logs":

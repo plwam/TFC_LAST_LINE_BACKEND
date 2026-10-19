@@ -71,6 +71,12 @@ class Event(models.Model):
         NAVIGATION_EXT = "NAVIGATION_EXT", "NAVIGATION_EXT"
         SUSPICIOUS_ENVIRONMENT = "SUSPICIOUS_ENVIRONMENT", "SUSPICIOUS_ENVIRONMENT"
 
+        # --- Retour candidat / interface (SDK) ---
+        # Émis par le SDK : avertissement vocal/bandeau prononcé au candidat, et retrait/masquage
+        # de l'aperçu ou du bandeau de surveillance (02b_SDK_RETOUR_CANDIDAT.md §4).
+        WARNING_ISSUED = "WARNING_ISSUED", "WARNING_ISSUED"
+        UI_TAMPERING = "UI_TAMPERING", "UI_TAMPERING"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(
         "examsessions.ExamSession",

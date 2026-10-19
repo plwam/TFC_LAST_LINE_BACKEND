@@ -6,12 +6,47 @@
 {% translate "Le projet cessera d'accepter les appels signés. Vous pourrez le réactiver à tout moment." as confirm_disable_msg %}
 <div class="grid gap-6 lg:grid-cols-3">
   <div class="rounded-lg border border-g-700 bg-g-850 p-6 lg:col-span-2">
-    <h2 class="text-sm font-medium text-g-text">{% translate "Informations" %}</h2>
-    <dl class="mt-4 space-y-3 text-sm">
-      <div><dt class="text-g-muted">{% translate "Nom" %}</dt><dd class="font-medium text-g-text">{{ project.name }}</dd></div>
-      <div><dt class="text-g-muted">{% translate "Description" %}</dt><dd class="text-g-text">{{ project.description|default:"—" }}</dd></div>
-      <div><dt class="text-g-muted">{% translate "Adresse du site" %}</dt><dd class="font-mono text-g-text break-all">{{ project.site_url }}</dd></div>
-      <div><dt class="text-g-muted">{% translate "Créé le" %}</dt><dd class="text-g-text">{{ project.created_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></dd></div>
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-sm font-medium text-g-text">{% translate "Informations" %}</h2>
+      <span class="rounded-md border border-g-700 bg-g-800 px-2 py-1 font-mono text-[0.7rem] text-g-faint" title="{{ project.id }}">{% translate "ID" %} {{ project.id|stringformat:"s"|slice:":8" }}</span>
+    </div>
+    <dl class="mt-5 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+      <div>
+        <dt class="text-g-muted">{% translate "Nom" %}</dt>
+        <dd class="mt-0.5 font-medium text-g-text">{{ project.name }}</dd>
+      </div>
+      <div>
+        <dt class="text-g-muted">{% translate "Domaine surveillé" %}</dt>
+        <dd class="mt-0.5 font-mono text-g-text">{{ project_host|default:"—" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-g-muted">{% translate "Description" %}</dt>
+        <dd class="mt-0.5 text-g-text">{{ project.description|default:"—" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-g-muted">{% translate "Adresse du site" %}</dt>
+        <dd class="mt-0.5">
+          <a href="{{ project.site_url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-g-blue break-all hover:text-g-blue/80">{{ project.site_url }}</a>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-g-muted">{% translate "Créé le" %}</dt>
+        <dd class="mt-0.5 text-g-text">{{ project.created_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></dd>
+      </div>
+      <div>
+        <dt class="text-g-muted">{% translate "Dernière modification" %}</dt>
+        <dd class="mt-0.5 text-g-text">{{ project.updated_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></dd>
+      </div>
+      <div>
+        <dt class="text-g-muted">{% translate "Dernière activité" %}</dt>
+        <dd class="mt-0.5">
+          {% if last_event_at %}
+            <span class="text-g-text">{{ last_event_at|date:"d/m/Y H:i" }} <span class="text-g-faint">UTC</span></span>
+          {% else %}
+            <span class="text-g-faint">{% translate "Aucun événement reçu" %}</span>
+          {% endif %}
+        </dd>
+      </div>
       <div>
         <dt class="text-g-muted">{% translate "État" %}</dt>
         <dd class="mt-1">
@@ -30,8 +65,41 @@
           {% endif %}
         </dd>
       </div>
-      <div><dt class="text-g-muted">{% translate "Statut du compte" %}</dt><dd class="text-g-text">{{ developer_status }}</dd></div>
+      <div>
+        <dt class="text-g-muted">{% translate "Statut du compte" %}</dt>
+        <dd class="mt-1">
+          {% if developer_status == 'active' %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>{% translate "Validé" %}
+            </span>
+          {% elif developer_status == 'pending' %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>{% translate "En attente de validation" %}
+            </span>
+          {% elif developer_status == 'suspended' %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-300">
+              <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>{% translate "Suspendu" %}
+            </span>
+          {% else %}
+            <span class="text-g-faint">—</span>
+          {% endif %}
+        </dd>
+      </div>
     </dl>
+
+    {# --- Clés d'intégration en accès rapide (copiables sans quitter la vue d'ensemble) --- #}
+    {% translate "Clé publique" as pub_label %}
+    {% translate "Identifiant du projet" as pid_label %}
+    <div class="mt-6 grid gap-5 border-t border-g-700 pt-5 sm:grid-cols-2">
+      <div>
+        {% include "components/copy_field.html" with id="overview-public-key" label=pub_label value=project.public_key %}
+        <p class="mt-1 text-xs text-g-faint">{% translate "Non confidentielle : à placer dans votre page d'examen (publicKey)." %}</p>
+      </div>
+      <div>
+        {% include "components/copy_field.html" with id="overview-project-id" label=pid_label value=project.id %}
+        <p class="mt-1 text-xs text-g-faint">{% translate "À indiquer au support lors d'une demande d'assistance." %}</p>
+      </div>
+    </div>
   </div>
   <div class="space-y-4">
     {# --- État de fonctionnement du SDK (heartbeat le plus récent) --- #}

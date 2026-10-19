@@ -50,6 +50,9 @@ EVENT_CATEGORIES = {
     _T.TAB_CHANGE_EXT: "extension",
     _T.NAVIGATION_EXT: "extension",
     _T.SUSPICIOUS_ENVIRONMENT: "extension",
+    # Retour candidat / interface
+    _T.WARNING_ISSUED: "browser",
+    _T.UI_TAMPERING: "security",
 }
 
 # Types critiques : marqués visuellement (bordure rouge) et pondérés davantage dans le score.

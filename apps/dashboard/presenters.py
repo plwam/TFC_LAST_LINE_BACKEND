@@ -216,8 +216,35 @@ def _suspicious_env(metadata):
     return "Environnement atypique détecté."
 
 
+def _warning_issued(metadata):
+    severity = _raw(metadata, "severity")
+    source = _raw(metadata, "sourceEvent")
+    count = _int(_raw(metadata, "occurrenceCount"))
+    parts = []
+    if severity:
+        parts.append(f"gravité {severity}")
+    if count is not None:
+        parts.append(f"occurrence {count}")
+    if source:
+        parts.append(f"déclencheur {source}")
+    if parts:
+        return "Avertissement au candidat (" + ", ".join(parts) + ")."
+    return "Avertissement au candidat."
+
+
+def _ui_tampering(metadata):
+    reason = _raw(metadata, "reason")
+    labels = {
+        "surveillance element removed": "élément de surveillance retiré",
+        "surveillance element hidden": "élément de surveillance masqué",
+    }
+    if reason in labels:
+        return f"Interface de surveillance altérée : {labels[reason]}."
+    return "Interface de surveillance altérée."
+
+
 # ---------------------------------------------------------------------------
-# Table de présentation des 27 types (06 §9.2)
+# Table de présentation des 29 types (06 §9.2)
 # ---------------------------------------------------------------------------
 EVENT_PRESENTATION = {
     # --- Navigateur ---
@@ -256,6 +283,10 @@ EVENT_PRESENTATION = {
     Event.Type.TAB_CHANGE_EXT: ("Onglet (extension)", "extension", _fixed("Changement d'onglet détecté par l'extension.")),
     Event.Type.NAVIGATION_EXT: ("Navigation (extension)", "extension", _navigation_ext),
     Event.Type.SUSPICIOUS_ENVIRONMENT: ("Environnement atypique", "extension", _suspicious_env),
+
+    # --- Retour candidat / interface ---
+    Event.Type.WARNING_ISSUED: ("Avertissement candidat", "browser", _warning_issued),
+    Event.Type.UI_TAMPERING: ("Surveillance masquée", "security", _ui_tampering),
 }
 
 

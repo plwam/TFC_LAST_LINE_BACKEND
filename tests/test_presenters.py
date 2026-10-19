@@ -24,7 +24,7 @@ def test_presentation_covers_all_types():
     # Parité stricte entre le catalogue technique et la table d'affichage : si un type est
     # ajouté au modèle sans phrase, ce test échoue (contrat partagé, 05_AGENT_GUIDELINES.md §5).
     assert set(EVENT_PRESENTATION.keys()) == set(Event.Type.values)
-    assert len(EVENT_PRESENTATION) == 27
+    assert len(EVENT_PRESENTATION) == 29
 
 
 def test_present_event_french_formatting():
