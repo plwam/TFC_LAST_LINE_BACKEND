@@ -1,7 +1,8 @@
 {% load i18n code_extras %}
 {% comment %} Onglet « Intégration » (BF-25, 06_FRONTEND_GUIDE.md §8.6.4) — thème sombre.
-   Les extraits doivent rester alignés sur la spec SDK (02_SDK.md §5 et §17) — étape ultérieure.
-   Ils sont pré-remplis avec la clé publique réelle et l'URL du CDN (SDK_CDN_URL). {% endcomment %}
+   Les extraits sont alignés sur l'API publique réelle du SDK (`src/index.ts`, `SdkConfig.ts`)
+   et sur le contrat machine (02_SDK.md §5 et §17). Le SDK ouvre lui-même la session HMAC :
+   il n'y a plus d'étape de génération de jeton côté serveur. {% endcomment %}
 <div class="max-w-3xl space-y-8">
 
   {# --- Prérequis --- #}
@@ -18,59 +19,113 @@
         <li class="flex items-start gap-2"><span class="mt-0.5 text-amber-400" aria-hidden="true">!</span> <span class="min-w-0">{% translate "Compte en attente de validation" %}</span></li>
       {% endif %}
       <li class="flex items-start gap-2"><span class="mt-0.5 text-green-400" aria-hidden="true">✓</span> <span class="min-w-0">{% translate "Clés API générées" %}</span></li>
+      <li class="flex items-start gap-2"><span class="mt-0.5 text-green-400" aria-hidden="true">✓</span> <span class="min-w-0">{% translate "Extension navigateur installée sur les postes d'examen" %}</span></li>
     </ul>
   </section>
 
   {# --- Étape 1 : installer le SDK --- #}
   <section class="rounded-lg border border-g-700 bg-g-850 p-6">
     <h2 class="text-sm font-medium text-g-text">{% translate "Étape 1 — Installer le SDK" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">
+      {% translate "Chargez le script dans la page d'examen. Les Workers de vision et d'audio, ainsi que les modèles IA, sont chargés automatiquement depuis le CDN du SDK (ou depuis vos URLs si vous les auto-hébergez)." %}
+    </p>
     {% code_block "snippet-install" "html" "index.html" %}<script src="{{ sdk_cdn_url }}"></script>{% endcode_block %}
   </section>
 
-  {# --- Étape 2 : générer le jeton de session (serveur) --- #}
+  {# --- Étape 2 : identité du projet --- #}
   <section class="rounded-lg border border-g-700 bg-g-850 p-6">
-    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 2 — Générer le jeton de session côté serveur" %}</h2>
-    <p class="mt-2 text-sm text-g-muted">{% translate "Le jeton est signé avec votre clé secrète (HMAC-SHA256) sur la chaîne canonique project_id|exam_id|student_id|issued_at." %}</p>
-    {% code_block "snippet-python" "python" "sign_session.py" %}import hmac, hashlib, time
-project_id = "{{ project.id }}"
-message = project_id + "|" + exam_id + "|" + student_id + "|" + str(issued_at)
-signature = hmac.new(SECRET_KEY.encode(), message.encode(), hashlib.sha256).hexdigest(){% endcode_block %}
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 2 — Renseigner l'identité du projet" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">
+      {% translate "La configuration live exige le projectId, les deux clés et l'URL de l'API machine. La clé secrète signe les appels (HMAC-SHA256) ; elle ne doit jamais être publiée dans un dépôt ni mise en cache par un CDN public." %}
+    </p>
+    <dl class="mt-3 space-y-2 text-sm">
+      <div class="flex flex-wrap gap-x-3">
+        <dt class="font-mono text-xs text-g-faint">projectId</dt>
+        <dd class="font-mono text-g-muted break-all">{{ project.id }}</dd>
+      </div>
+      <div class="flex flex-wrap gap-x-3">
+        <dt class="font-mono text-xs text-g-faint">publicKey</dt>
+        <dd class="font-mono text-g-muted break-all">{{ project.public_key }}</dd>
+      </div>
+      <div class="flex flex-wrap gap-x-3">
+        <dt class="font-mono text-xs text-g-faint">secretKey</dt>
+        <dd class="text-g-muted">{% translate "disponible dans l'onglet des clés du projet" %}</dd>
+      </div>
+      <div class="flex flex-wrap gap-x-3">
+        <dt class="font-mono text-xs text-g-faint">apiUrl</dt>
+        <dd class="font-mono text-g-muted break-all">https://api.examsdk.example/api/v1/machine</dd>
+      </div>
+    </dl>
   </section>
 
   {# --- Étape 3 : initialiser le SDK dans la page d'examen --- #}
   <section class="rounded-lg border border-g-700 bg-g-850 p-6">
     <h2 class="text-sm font-medium text-g-text">{% translate "Étape 3 — Initialiser le SDK dans la page d'examen" %}</h2>
-    {% code_block "snippet-init" "javascript" "exam-page.html" %}ExamSDK.init({
+    {% code_block "snippet-init" "javascript" "exam-page.js" %}const ExamSDK = window.ExamSurveillanceSDK.ExamSurveillanceSDK;
+
+const sdk = await ExamSDK.init({
+  mode: "live",
+  projectId: "{{ project.id }}",
   publicKey: "{{ project.public_key }}",
-  apiUrl: "https://api.examsdk.example",
-  // examKeywords, samplingIntervalMs, enabledDetectors, onBlock : facultatifs
-});{% endcode_block %}
+  secretKey: "sk_live_...",
+  apiUrl: "https://api.examsdk.example/api/v1/machine",
+  examId: "MATH-2024-S1",          // fourni par votre plateforme
+  studentId: "etu-1042",           // fourni par votre plateforme
+
+  language: "fr",
+  examKeywords: ["calculatrice"],
+  enabledDetectors: { face: true, objects: true, gaze: true, hands: true, audio: true },
+
+  onEvent: (event) => console.log(event.type, event.description),
+  onBlock: (reason) => afficherEcranDeBlocage(reason),
+});
+
+// En fin d'épreuve.
+sdk.destroy();{% endcode_block %}
+    <p class="mt-2 text-xs text-g-faint">
+      {% translate "Appelez init() depuis une fonction asynchrone ou un module JavaScript. apiUrl est la base de l'API machine, sans slash final. En mode test, aucune clé, aucun appel réseau et aucun handshake d'extension ne sont nécessaires." %}
+    </p>
   </section>
 
   {# --- Étape 4 : informer les étudiants --- #}
   <section class="rounded-lg border border-g-700 bg-g-850 p-6">
     <h2 class="text-sm font-medium text-g-text">{% translate "Étape 4 — Informer vos étudiants" %}</h2>
-    <p class="mt-2 text-sm text-g-muted">{% translate "Expliquez-leur d'installer l'extension, d'autoriser la caméra et le micro, et précisez qu'aucune image ni audio n'est transmis." %}</p>
+    <p class="mt-2 text-sm text-g-muted">{% translate "Expliquez-leur d'installer l'extension, d'autoriser la caméra et le micro, et précisez qu'aucune image ni audio n'est transmis : seuls des événements interprétés sont envoyés." %}</p>
   </section>
 
-  {# --- Étape 5 : journal & état du SDK --- #}
+  {# --- Étape 5 : événements et journal --- #}
   <section class="rounded-lg border border-g-700 bg-g-850 p-6">
-    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 5 — Envoyer le journal du SDK" %}</h2>
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 5 — Recevoir les événements et suivre le SDK" %}</h2>
     <p class="mt-2 text-sm text-g-muted">
-      {% translate "Faites remonter l'état de fonctionnement de votre SDK : un signal de vie (heartbeat) à intervalle régulier et, le cas échéant, des messages d'erreur. Vous suivez alors l'état de votre SDK — en ligne, dégradé ou hors ligne — dans l'onglet « Journal SDK ». L'appel se signe sur la chaîne canonique project_id|sdk-logs|issued_at." %}
+      {% translate "Le SDK met les événements en file et les envoie par lots ; un incident réseau est retenté sans bloquer l'épreuve. Le journal de fonctionnement (heartbeat et erreurs) part automatiquement vers l'API machine : vous suivez l'état « en ligne / dégradé / hors ligne » dans l'onglet « Journal SDK »." %}
     </p>
-    {% code_block "snippet-logs" "javascript" "sdk-logs.js" %}ExamSDK.sendLogs([
-  { kind: "heartbeat", level: "info", sdkVersion: ExamSDK.version },
-]); // toutes les 30 à 60 s (jamais au-delà de la fenêtre de surveillance){% endcode_block %}
+    {% code_block "snippet-events" "javascript" "exam-page.js" %}sdk.on("event", (event) => {
+  // event.type, event.severity, event.label, event.description, event.metadata
+});
+
+sdk.on("block", (reason) => afficherEcranDeBlocage(reason));
+sdk.on("modelProgress", ({ name, state, progress }) => afficherChargement(name, state, progress));
+
+// Pour le support : 500 dernières entrées locales.
+console.log(sdk.getLogs());{% endcode_block %}
     <p class="mt-2 text-xs text-g-faint">
-      {% translate "La clé secrète ne doit jamais être exposée à la page d'examen : faites signer l'appel par votre serveur." %}
+      {% translate "La clé secrète ne doit jamais être exposée dans un dépôt public : la page d'examen doit être servie derrière une authentification étudiante, et la clé régénérée en cas de fuite." %}
     </p>
+  </section>
+
+  {# --- Étape 6 : tester sans backend --- #}
+  <section class="rounded-lg border border-g-700 bg-g-850 p-6">
+    <h2 class="text-sm font-medium text-g-text">{% translate "Étape 6 — Tester l'intégration sans backend" %}</h2>
+    <p class="mt-2 text-sm text-g-muted">
+      {% translate "Le mode test démarre les détecteurs et le retour candidat sans clé, sans réseau et sans extension : utile pour valider l'interface et les permissions avant la mise en service." %}
+    </p>
+    {% code_block "snippet-test" "javascript" "exam-page-test.js" %}const sdk = await ExamSDK.init({ mode: "test", language: "fr" });{% endcode_block %}
   </section>
 
   {# --- Liens + avertissement --- #}
   <a href="{% url 'dashboard:docs' %}" class="inline-flex items-center gap-2 text-sm font-medium text-g-blue hover:text-g-blue/80">
     <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25M6.75 17.25 1.5 12l5.25-5.25M14.25 3.75l-4.5 16.5"/></svg>
-    {% translate "Documentation des endpoints" %}
+    {% translate "Documentation du SDK et des endpoints" %}
   </a>
   <p class="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">{% translate "Les mots-clés d'examen (examKeywords) sont transmis en clair au navigateur : ils sont visibles de l'étudiant qui inspecte la page." %}</p>
 </div>

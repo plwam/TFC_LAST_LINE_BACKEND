@@ -453,6 +453,82 @@
     });
   }
 
+  /**
+   * Sommaire de documentation : suit la section visible pendant le défilement.
+   * Le conteneur `[data-scrollspy]` porte les liens d'ancre ; la cible est l'élément dont
+   * l'`id` correspond au fragment. On active le dernier titre passé sous la ligne de
+   * flottaison, et le dernier lien quand le bas de page est atteint (sinon les sections
+   * courtes en fin de page ne seraient jamais mises en évidence).
+   */
+  function initScrollSpy() {
+    const nav = document.querySelector("[data-scrollspy]");
+    if (!nav) return;
+
+    const entries = Array.from(nav.querySelectorAll('a[href^="#"]'))
+      .map((link) => {
+        const id = link.hash.slice(1);
+        const target = id ? document.getElementById(id) : null;
+        return target ? { link, target } : null;
+      })
+      .filter(Boolean);
+    if (!entries.length) return;
+
+    const activeClasses = ["bg-g-800", "font-medium", "text-g-blue"];
+    const idleClasses = ["text-g-muted"];
+    let current = null;
+
+    const revealInNav = (link) => {
+      const top = link.offsetTop;
+      const height = link.offsetHeight;
+      if (top < nav.scrollTop) nav.scrollTop = Math.max(0, top - 8);
+      else if (top + height > nav.scrollTop + nav.clientHeight) {
+        nav.scrollTop = top + height - nav.clientHeight + 8;
+      }
+    };
+
+    const activate = (entry) => {
+      if (entry === current) return;
+      if (current) {
+        current.link.classList.remove(...activeClasses);
+        current.link.classList.add(...idleClasses);
+        current.link.removeAttribute("aria-current");
+      }
+      current = entry;
+      if (!entry) return;
+      entry.link.classList.remove(...idleClasses);
+      entry.link.classList.add(...activeClasses);
+      entry.link.setAttribute("aria-current", "location");
+      revealInNav(entry.link);
+    };
+
+    const update = () => {
+      // Ligne de flottaison sous l'en-tête : une section devient active dès qu'elle la franchit.
+      const offset = 96;
+      let visible = entries[0];
+      for (const entry of entries) {
+        if (entry.target.getBoundingClientRect().top <= offset) visible = entry;
+        else break;
+      }
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      activate(atBottom ? entries[entries.length - 1] : visible);
+    };
+
+    let pending = false;
+    const schedule = () => {
+      if (pending) return;
+      pending = true;
+      window.requestAnimationFrame(() => {
+        pending = false;
+        update();
+      });
+    };
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    update();
+  }
+
   /** Fermeture des messages flash (les erreurs ne disparaissent jamais automatiquement). */
   function initFlashMessages() {
     document.querySelectorAll("[data-dismiss-alert]").forEach((button) => {
@@ -471,6 +547,7 @@
     initSecretReveal();
     initConfirmByTyping();
     initSdkLogStream();
+    initScrollSpy();
     initFlashMessages();
   });
 })();

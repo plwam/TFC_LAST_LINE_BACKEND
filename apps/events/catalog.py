@@ -38,6 +38,7 @@ EVENT_CATEGORIES = {
     # Vision
     _T.NO_FACE_DETECTED: "vision",
     _T.MULTIPLE_FACES: "vision",
+    _T.OBJECT_DETECTED: "vision",
     _T.FORBIDDEN_OBJECT_DETECTED: "vision",
     _T.VIRTUAL_DEVICE_DETECTED: "vision",
     _T.GAZE_AWAY_SUSTAINED: "vision",

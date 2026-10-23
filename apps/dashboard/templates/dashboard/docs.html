@@ -1,12 +1,12 @@
 {% extends "dashboard/base_dashboard.html" %}
 {% load i18n code_extras %}
-{% comment %} Référence des ENDPOINTS HTTP, intégrée au dashboard (`/dashboard/docs/`).
+{% comment %} Référence de l'API et de l'intégration du SDK, intégrée au dashboard
+   (`/dashboard/docs/`).
    Pourquoi une page maison plutôt que Redoc/Swagger : ces derniers chargent leur moteur depuis un
    CDN tiers ; si le CDN est bloqué, la page reste blanche. Ici tout est rendu CÔTÉ SERVEUR (code
-   coloré par Pygments, filtre/tag `code_extras`) et ne documente que les endpoints réels.
-
-   La documentation du SDK (JavaScript) fera l'objet d'une étape ultérieure : cette page ne couvre
-   QUE les endpoints consommables par un tiers. {% endcomment %}
+   coloré par Pygments, filtre/tag `code_extras`). La page couvre l'intégration du SDK JavaScript
+   (configuration, cycle de vie, événements, journal) puis les endpoints réels consommés par le
+   SDK / LMS. {% endcomment %}
 
 {% block title %}{% translate "Documentation API" %}{% endblock %}
 
@@ -19,16 +19,24 @@
     <h1 class="text-2xl font-medium text-g-text">{% translate "Documentation API" %}</h1>
     {% if request.user.is_superuser %}
       <p class="mt-2 text-sm text-g-muted">
-        {% translate "Vue administrateur — aperçu complet de l'API : gestion (projets, sessions), intégration (SDK / LMS) et points publics. Chaque endpoint est accompagné d'un exemple de requête et de réponse." %}
+        {% translate "Vue administrateur — aperçu complet de l'API et du SDK : intégration JavaScript, gestion (projets, sessions), intégration machine (SDK / LMS) et points publics. Chaque extrait est accompagné d'un exemple de requête et de réponse." %}
       </p>
     {% else %}
       <p class="mt-2 text-sm text-g-muted">
-        {% translate "Les requêtes que votre plateforme d'examen (LMS ou SDK) envoie à ExamSDK : ouvrir et clôturer une session d'examen, envoyer les événements détectés, puis les relire. Chaque endpoint est accompagné d'un exemple de requête et de réponse, prêt à copier." %}
+        {% translate "Intégrez la surveillance à votre page d'examen avec le SDK JavaScript, ou pilotez l'API machine depuis votre propre plateforme (LMS) : ouvrir et clôturer une session, envoyer les événements détectés, puis les relire. Chaque extrait est accompagné d'un exemple de requête et de réponse, prêt à copier." %}
       </p>
     {% endif %}
     <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">{% translate "SDK JavaScript" %}</span>
       <span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">{% translate "Intégration (SDK / LMS)" %}</span>
       {% if request.user.is_superuser %}<span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API JWT</span><span class="rounded-full border border-g-700 bg-g-850 px-3 py-1 font-mono text-g-muted">API publique</span>{% endif %}
+    </div>
+    <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-g-faint" aria-label="{% translate 'Légende des couleurs' %}">
+      <span class="inline-flex items-center gap-1.5"><span class="text-sky-300" aria-hidden="true">●</span>{% translate "Endpoints et champs" %}</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-emerald-300" aria-hidden="true">●</span>{% translate "Succès et valeurs par défaut" %}</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-amber-300" aria-hidden="true">●</span>{% translate "Options et avertissements" %}</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-rose-300" aria-hidden="true">●</span>{% translate "Sécurité" %}</span>
+      <span class="inline-flex items-center gap-1.5"><span class="text-violet-300" aria-hidden="true">●</span>{% translate "Événements" %}</span>
     </div>
     <div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
       <a href="{% url 'docs:swagger' %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 font-medium text-g-blue hover:text-g-blue/80">
@@ -48,6 +56,7 @@
 
   {# ----- Sommaire latéral (colle au défilement sur grand écran) ----- #}
   <nav class="sticky top-6 hidden max-h-[calc(100vh-3rem)] overflow-y-auto pr-2 text-sm lg:block"
+       data-scrollspy
        aria-label="{% translate 'Sommaire de la documentation' %}">
     <p class="text-[11px] font-medium uppercase tracking-wide text-g-faint">{% translate "Sur cette page" %}</p>
 
@@ -72,6 +81,14 @@
       <li><a href="#sessions-detail" class="block text-g-muted hover:text-g-text">{% translate "Détail d'une session" %}</a></li>
     </ul>
     {% endif %}
+
+    <p class="mt-4 font-medium text-g-text">{% translate "SDK JavaScript" %}</p>
+    <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
+      <li><a href="#sdk-install" class="block text-g-muted hover:text-g-text">{% translate "Installer le SDK" %}</a></li>
+      <li><a href="#sdk-init" class="block text-g-muted hover:text-g-text">{% translate "Initialiser la surveillance" %}</a></li>
+      <li><a href="#sdk-config" class="block text-g-muted hover:text-g-text">{% translate "Options de configuration" %}</a></li>
+      <li><a href="#sdk-events" class="block text-g-muted hover:text-g-text">{% translate "Événements et journal" %}</a></li>
+    </ul>
 
     <p class="mt-4 font-medium text-g-text">{% translate "Intégration (SDK / LMS)" %}</p>
     <ul class="mt-1 space-y-1 border-l border-g-800 pl-3">
@@ -100,14 +117,14 @@
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Authentification (JWT)" %}</h2>
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
-        {% translate "Connectez-vous une fois par email + mot de passe pour obtenir un jeton, puis joignez ce jeton à chaque appel. Recommandé pour les clients non-navigateur (mobile, desktop, scripts). Envoyez le jeton dans l'en-tête" %} <code class="rounded bg-g-800 px-1.5 py-0.5 font-mono text-xs text-g-text">Authorization: Bearer &lt;access&gt;</code>.
+        {% translate "Connectez-vous une fois par email + mot de passe pour obtenir un jeton, puis joignez ce jeton à chaque appel. Recommandé pour les clients non-navigateur (mobile, desktop, scripts). Envoyez le jeton dans l'en-tête" %} <code class="rounded bg-sky-500/10 px-1.5 py-0.5 font-mono text-xs text-sky-200">Authorization: Bearer &lt;access&gt;</code>.
       </p>
 
       {# --- Obtenir un jeton --- #}
       <div id="jwt-token" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/auth/token/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/auth/token/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Obtenir un jeton JWT" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -132,7 +149,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/ \
       <div id="jwt-refresh" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/auth/token/refresh/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/auth/token/refresh/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Rafraîchir un jeton d'accès" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -156,7 +173,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/refresh/ \
     {# ================================ PROJETS ================================ #}
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Projets" %}</h2>
-      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+      <p class="mt-2 max-w-3xl border-l-2 border-rose-400/60 pl-3 text-sm text-g-muted">
         {% translate "Créez et gérez vos projets ainsi que leurs clés API. La clé secrète n'est jamais renvoyée par ces appels (seule sa forme masquée l'est) : pour l'obtenir, utilisez l'action de régénération. Vous n'avez accès qu'à vos propres projets ; tout autre identifiant renvoie 404." %}
       </p>
 
@@ -164,7 +181,7 @@ curl -X POST https://api.examsdk.example/api/v1/auth/token/refresh/ \
       <div id="projects-list" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/projects/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses projets" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">{% translate "Récupérez vos projets, du plus récent au plus ancien. Les projets archivés n'apparaissent pas dans cette liste." %}</p>
@@ -194,7 +211,7 @@ curl https://api.examsdk.example/api/v1/projects/ \
       <div id="projects-create" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/projects/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Créer un projet" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -227,7 +244,7 @@ curl -X POST https://api.examsdk.example/api/v1/projects/ \
           <span class="rounded bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-medium text-amber-300">PUT</span>
           <span class="rounded bg-amber-500/15 px-2 py-0.5 font-mono text-xs font-medium text-amber-300">PATCH</span>
           <span class="rounded bg-red-500/15 px-2 py-0.5 font-mono text-xs font-medium text-red-300">DELETE</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/{id}/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/projects/{id}/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail, modification et archivage" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -254,10 +271,10 @@ curl -X DELETE https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../ \
       <div id="projects-regenerate" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/projects/{id}/regenerate-secret/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/projects/{id}/regenerate-secret/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Régénérer la clé secrète" %}</h3>
-        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        <p class="mt-2 max-w-3xl border-l-2 border-amber-400/60 pl-3 text-sm text-g-muted">
           {% translate "Générez un nouveau couple de clés : l'ancienne est immédiatement désactivée. La nouvelle clé secrète n'est affichée qu'ici, une seule fois — conservez-la en sécurité." %}
         </p>
         {% code_block "doc-projects-regenerate-curl" "bash" "cURL" %}
@@ -279,11 +296,16 @@ curl -X POST https://api.examsdk.example/api/v1/projects/3c8e1f2a-.../regenerate
       <p class="mt-2 max-w-3xl text-sm text-g-muted">
         {% translate "Consultez en lecture seule les sessions d'examen de vos projets, tous projets confondus. Le risk_score est un indice d'aide à la décision, pas une preuve de fraude." %}
       </p>
+      <p class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+        <span class="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-emerald-300">active</span>
+        <span class="rounded bg-g-800 px-2 py-0.5 font-mono text-g-muted">closed</span>
+        <span class="rounded bg-rose-500/10 px-2 py-0.5 font-mono text-rose-300">invalid</span>
+      </p>
 
       <div id="sessions-list" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/sessions/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/sessions/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lister ses sessions" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -313,7 +335,7 @@ curl https://api.examsdk.example/api/v1/sessions/ \
       <div id="sessions-detail" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/sessions/{id}/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/sessions/{id}/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Détail d'une session" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -327,6 +349,158 @@ curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
     </section>
     {% endif %}
 
+    {# ============================= SDK JAVASCRIPT ============================ #}
+    <section>
+      <h2 class="text-xl font-medium text-g-text">{% translate "SDK JavaScript (navigateur)" %}</h2>
+      <p class="mt-2 max-w-3xl text-sm text-g-muted">
+        {% translate "Le SDK s'exécute dans la page d'examen. Il ouvre et clôture lui-même la session machine, échantillonne la caméra et le microphone localement, puis n'envoie que des événements interprétés : aucune image ni aucun extrait audio ne quitte le navigateur. Il affiche aussi le retour candidat (aperçu, avertissements vocaux, bandeau de surveillance)." %}
+      </p>
+
+      {# --- Installer le SDK --- #}
+      <div id="sdk-install" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <h3 class="text-base font-medium text-g-text">{% translate "Installer le SDK" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Chargez le script avant votre code d'intégration. Le paquet contient aussi les Workers de vision et d'audio (exécutés hors du thread principal) ainsi que les modèles IA, téléchargés à la demande puis mis en cache par le navigateur." %}
+        </p>
+        {% code_block "doc-sdk-install" "html" "index.html" %}
+<script src="{{ sdk_cdn_url }}"></script>
+        {% endcode_block %}
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "Le build UMD expose la classe dans l'objet global. Pour un import ESM, utilisez dist/examsdk.esm.js (export par défaut) :" %}
+        </p>
+        {% code_block "doc-sdk-import" "javascript" "exam-page.js" %}
+// Build UMD chargé par <script>
+const ExamSDK = window.ExamSurveillanceSDK.ExamSurveillanceSDK;
+
+// Ou, avec le build ESM :
+// import ExamSurveillanceSDK from "./dist/examsdk.esm.js";
+        {% endcode_block %}
+      </div>
+
+      {# --- Initialiser la surveillance --- #}
+      <div id="sdk-init" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <h3 class="text-base font-medium text-g-text">{% translate "Initialiser la surveillance" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Appelez init() au démarrage de l'épreuve, dans une fonction asynchrone ou un module JavaScript. En mode live, six champs sont obligatoires : projectId, publicKey, secretKey, apiUrl, examId et studentId. Le SDK ouvre la session, vérifie la présence de l'extension, demande l'accès à la caméra et au microphone, puis démarre les détecteurs. Un échec bloquant est signalé par onBlock (EXTENSION_MISSING, PERMISSIONS_DENIED, SESSION_INVALID…) — jamais silencieusement." %}
+        </p>
+        {% code_block "doc-sdk-init" "javascript" "exam-page.js" %}
+const sdk = await ExamSDK.init({
+  mode: "live",
+  projectId: "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01", // projet.id
+  publicKey: "pk_live_9f2c7a1b4e...",                // projet.public_key
+  secretKey: "sk_live_...",                          // projet.secret_key
+  apiUrl: "https://api.examsdk.example/api/v1/machine",
+  examId: "MATH-2024-S1",
+  studentId: "etu-1042",
+
+  language: "fr",
+  examKeywords: ["calculatrice", "corrigé"],
+  enabledDetectors: { face: true, objects: true, gaze: true, hands: true, audio: true },
+  voiceWarnings: { preview: { position: "top-right" } },
+
+  onEvent: (event) => console.log(event.type, event.description),
+  onBlock: (reason) => afficherEcranDeBlocage(reason),
+});
+
+// En fin d'épreuve : clôture la session machine et libère caméra / micro.
+sdk.destroy();
+        {% endcode_block %}
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "apiUrl est la base de l'API machine, sans slash final ni segment de ressource : le SDK ajoute /sessions/, /events/ et /logs/. En mode test, aucune clé, aucun appel réseau et aucun handshake d'extension ne sont nécessaires : pratique pour intégrer l'interface avant le raccordement au backend." %}
+        </p>
+        {% code_block "doc-sdk-test" "javascript" "exam-page-test.js" %}
+const sdk = await ExamSDK.init({
+  mode: "test",
+  language: "fr",
+  onEvent: (event) => console.log(event.type, event.description),
+});
+        {% endcode_block %}
+        <p class="mt-3 max-w-3xl rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+          {% translate "En mode live, la clé secrète est nécessaire dans la page d'examen pour signer les appels machine. Servez cette page derrière une authentification étudiante, interdisez sa mise en cache publique et régénérez la clé du projet si elle est divulguée." %}
+        </p>
+      </div>
+
+      {# --- Options de configuration --- #}
+      <div id="sdk-config" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <h3 class="text-base font-medium text-g-text">{% translate "Options de configuration" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Tous les seuils sont surchargeables : un examen de mathématiques (regarder au plafond pour réfléchir) tolère des valeurs différentes d'un QCM. Les valeurs ci-dessous sont celles appliquées par défaut." %}
+        </p>
+        <div class="mt-3 max-w-3xl overflow-x-auto rounded-md border border-g-700 bg-g-850 text-xs text-g-muted">
+          <table class="w-full text-left">
+            <thead class="border-b border-g-700 text-[11px] uppercase tracking-wide text-g-faint">
+              <tr><th class="px-3 py-2">{% translate "Option" %}</th><th class="px-3 py-2">{% translate "Rôle / défaut" %}</th></tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">projectId, publicKey, secretKey</td><td class="px-3 py-2">{% translate "Identité du projet, requise en mode live. La clé publique identifie l'appel, la clé secrète signe la chaîne HMAC." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">apiUrl, examId, studentId</td><td class="px-3 py-2">{% translate "Base de l'API machine, identifiants de l'épreuve et de l'étudiant, requis en mode live pour ouvrir la session." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">mode</td><td class="px-3 py-2"><code class="text-emerald-300">live</code> {% translate "(défaut) ou" %} <code class="text-amber-300">test</code> {% translate "(hors ligne, sans clé)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">language</td><td class="px-3 py-2"><code class="text-emerald-300">fr</code> {% translate "(défaut) ou" %} <code class="text-amber-300">en</code> {% translate "— libellés, avertissements vocaux et modèle vocal." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">examKeywords</td><td class="px-3 py-2">{% translate "Mots-clés interdits analysés dans l'audio (défaut : liste vide)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">objectConfidenceThreshold, objectConfirmationFrames</td><td class="px-3 py-2">{% translate "Seuil de confiance COCO-SSD (défaut 0,5) et nombre d'images consécutives avant de signaler un objet (défaut 2)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">objectModelBase</td><td class="px-3 py-2"><code class="text-emerald-300">lite_mobilenet_v2</code> {% translate "(défaut, rapide) ou" %} <code class="text-amber-300">mobilenet_v2</code> {% translate "(plus précis, plus lourd)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">objectAttentionLabels</td><td class="px-3 py-2">{% translate "Libellés COCO-SSD (en anglais) qui déclenchent un rappel candidat « à vérifier » : le candidat est invité à confirmer que l'objet est autorisé, et le surveillant est informé. La détection reste neutre. Défaut : téléphone, livre, ordinateur portable, clavier, souris, télécommande, écran, écouteurs." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">enabledDetectors</td><td class="px-3 py-2">{% translate "face, objects, gaze, hands et audio actifs par défaut ; idle et multiMonitor désactivés (opt-in)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">samplingIntervalMs</td><td class="px-3 py-2">{% translate "Période d'analyse d'image (défaut 2000 ms, minimum 500 ms)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">gazeAwayThresholdMs, headTurn*</td><td class="px-3 py-2">{% translate "Seuils de regard et de rotation de tête (durée, fenêtre, nombre d'occurrences, angles)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">handsVisibleThresholdMs, noFaceThresholdMs</td><td class="px-3 py-2">{% translate "Durée avant signalement des mains visibles (4000 ms) ou du visage absent (3000 ms)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">audioConfirmationSegments, audioConfirmWindowMs</td><td class="px-3 py-2">{% translate "Nombre de segments concordants et fenêtre de confirmation avant un événement audio (2 segments / 15 s)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">voiceWarnings</td><td class="px-3 py-2">{% translate "Avertissements vocaux et aperçu caméra : position, taille, déplaçable, textes/seuils par événement." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">diagnostics</td><td class="px-3 py-2">{% translate "heartbeatIntervalMs (défaut 45 s) et relayUrl pour déléguer la signature du journal à un relais." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">modelBaseUrl, workerBaseUrl, wasmBaseUrl</td><td class="px-3 py-2">{% translate "Auto-hébergement des modèles, Workers et fichiers WASM (par défaut, CDN du SDK)." %}</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 font-mono text-sky-300">audioModelUrl</td><td class="px-3 py-2">{% translate "Surcharge de l'archive Vosk (.tar.gz). Sinon le modèle de la langue est choisi automatiquement." %}</td></tr>
+              <tr><td class="px-3 py-2 font-mono text-sky-300">onEvent, onBlock</td><td class="px-3 py-2">{% translate "Callbacks appelés à chaque événement normalisé et à chaque blocage de session." %}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# --- Événements, progression et journal --- #}
+      <div id="sdk-events" class="scroll-mt-20 border-t border-g-800 pt-8">
+        <h3 class="text-base font-medium text-g-text">{% translate "Événements et journal" %}</h3>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Chaque détection devient un événement normalisé, déjà traduit dans la langue active : type, sévérité, libellé, description, horodatage, confiance et métadonnées interprétables. Les événements sont mis en file puis envoyés par lots à l'API machine ; un échec réseau est retenté sans jamais bloquer l'épreuve." %}
+        </p>
+        {% code_block "doc-sdk-events" "javascript" "exam-page.js" %}
+sdk.on("event", (event) => {
+  // event.type, event.severity, event.label, event.description,
+  // event.metadata, event.confidence_score, event.occurred_at
+});
+
+sdk.on("block", (reason) => {
+  // EXTENSION_MISSING, EXTENSION_HEARTBEAT_LOST, PERMISSIONS_DENIED,
+  // INVALID_CONFIG, SESSION_INVALID, UI_TAMPERING, TECHNICAL_ERROR
+});
+
+sdk.on("modelProgress", ({ name, state, progress }) => {
+  // name : face | objects | hands | vosk
+  // state : pending | loading | ready | error
+});
+
+console.log(sdk.state); // INITIALIZING | ACTIVE | BLOCKED | CLOSED
+        {% endcode_block %}
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "Les canaux disponibles via on() et off() sont event, block, log, modelProgress et inference. Les principaux codes d'événement émis par le SDK sont :" %}
+        </p>
+        <ul class="mt-2 max-w-3xl space-y-1 text-sm text-g-muted">
+          <li><span class="font-medium text-sky-300">{% translate "Navigateur" %}</span> — <code class="font-mono text-xs text-sky-200">FOCUS_LOST, TAB_SWITCH, COPY_PASTE_TEXT, CLIPBOARD_IMAGE_PASTE, PAGE_EXIT, DOM_TAMPERING, DEVTOOLS_OPEN, FULLSCREEN_EXIT, PRINT_ATTEMPT, SUSPICIOUS_KEY_COMBO, IDLE_TIMEOUT, MULTI_MONITOR_DETECTED</code></li>
+          <li><span class="font-medium text-violet-300">{% translate "Vision" %}</span> — <code class="font-mono text-xs text-violet-200">NO_FACE_DETECTED, MULTIPLE_FACES, OBJECT_DETECTED, GAZE_AWAY_SUSTAINED, REPEATED_HEAD_TURN, HANDS_VISIBLE_SUSTAINED</code></li>
+          <li><span class="font-medium text-amber-300">{% translate "Audio" %}</span> — <code class="font-mono text-xs text-amber-200">AUDIO_KEYWORD_MATCH, MULTIPLE_VOICES</code></li>
+          <li><span class="font-medium text-rose-300">{% translate "Sécurité et retour candidat" %}</span> — <code class="font-mono text-xs text-rose-200">AUTOMATION_DETECTED, VIRTUAL_DEVICE_DETECTED, SIMULATED_EVENT_DETECTED, WARNING_ISSUED, UI_TAMPERING</code></li>
+          <li><span class="font-medium text-emerald-300">{% translate "Extension navigateur" %}</span> — <code class="font-mono text-xs text-emerald-200">TAB_CHANGE_EXT, NAVIGATION_EXT, SUSPICIOUS_ENVIRONMENT</code></li>
+        </ul>
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "OBJECT_DETECTED est volontairement neutre : il liste tous les objets reconnus par COCO-SSD (nom, confiance, nombre de personnes) sans décider s'ils sont autorisés ou interdits. Les libellés configurés dans objectAttentionLabels déclenchent en plus un rappel candidat et un événement WARNING_ISSUED : le candidat est invité à vérifier que l'objet est autorisé, et le surveillant est informé. C'est votre plateforme ou le tableau de bord qui interprète ces objets selon le contexte de l'épreuve." %}
+        </p>
+        <p class="mt-3 max-w-3xl text-sm text-g-muted">
+          {% translate "Le journal de fonctionnement est automatique : un heartbeat signé est envoyé toutes les 45 secondes environ à l'API machine, avec les messages du SDK. Il n'y a rien à appeler manuellement. getLogs() renvoie les 500 dernières entrées locales pour le support ; resetCounters() et blockSession() restent disponibles pour l'intégrateur." %}
+        </p>
+        <p class="mt-2 max-w-3xl text-xs text-g-faint">
+          {% translate "Les modèles sont chargés automatiquement : vision (visage, objets, mains) depuis le CDN ou modelBaseUrl, audio depuis le modèle Vosk de la langue (fr ou en) ou audioModelUrl. Suivez leur état via le canal modelProgress avant d'afficher « surveillance active »." %}
+        </p>
+      </div>
+    </section>
+
     {# ============================= INTÉGRATION ============================== #}
     <section>
       <h2 class="text-xl font-medium text-g-text">{% translate "Intégration (SDK / LMS)" %}</h2>
@@ -338,14 +512,17 @@ curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
       <div id="machine-signature" class="scroll-mt-20 border-t border-g-800 pt-8">
         <h3 class="text-base font-medium text-g-text">{% translate "Signer une requête" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
+          {% translate "Si vous utilisez le SDK JavaScript, il applique cette signature lui-même : vous n'avez aucun jeton à générer. Cette section s'adresse à une intégration LMS directe, qui appelle l'API machine depuis son propre serveur." %}
+        </p>
+        <p class="mt-2 max-w-3xl text-sm text-g-muted">
           {% translate "Ajoutez deux en-têtes à chaque appel :" %}
         </p>
         <ul class="mt-2 max-w-3xl space-y-1 text-sm text-g-muted">
-          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Public-Key</code> — <span>{% translate "la clé publique de votre projet, qui identifie l'appel." %}</span></li>
-          <li class="flex gap-2"><code class="font-mono text-xs text-g-text">X-ExamSDK-Signature</code> — <span>{% translate "la signature HMAC-SHA256 (en hexadécimal) calculée avec votre clé secrète." %}</span></li>
+          <li class="flex gap-2"><code class="font-mono text-xs text-sky-200">X-ExamSDK-Public-Key</code> — <span>{% translate "la clé publique de votre projet, qui identifie l'appel." %}</span></li>
+          <li class="flex gap-2"><code class="font-mono text-xs text-sky-200">X-ExamSDK-Signature</code> — <span>{% translate "la signature HMAC-SHA256 (en hexadécimal) calculée avec votre clé secrète." %}</span></li>
         </ul>
         <p class="mt-3 max-w-3xl text-sm text-g-muted">
-          {% translate "La signature se calcule sur les données envoyées. Ajoutez à ces données un horodatage" %} <code class="font-mono text-xs text-g-text">issued_at</code> {% translate "(en secondes) proche de l'heure réelle :" %}
+          {% translate "La signature se calcule sur les données envoyées. Ajoutez à ces données un horodatage" %} <code class="font-mono text-xs text-emerald-300">issued_at</code> {% translate "(en secondes) proche de l'heure réelle :" %}
         </p>
         <div class="mt-3 max-w-3xl overflow-hidden rounded-md border border-g-700 bg-g-850 text-xs text-g-muted">
           <table class="w-full text-left">
@@ -353,10 +530,10 @@ curl https://api.examsdk.example/api/v1/sessions/6f1c0f2a-.../ \
               <tr><th class="px-3 py-2">{% translate "Endpoint" %}</th><th class="px-3 py-2">{% translate "Données à signer" %}</th></tr>
             </thead>
             <tbody class="font-mono">
-              <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /</td><td class="px-3 py-2">project_id|exam_id|student_id|issued_at</td></tr>
-              <tr class="border-b border-g-800"><td class="px-3 py-2">sessions /close/</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
-              <tr class="border-b border-g-800"><td class="px-3 py-2">events /</td><td class="px-3 py-2">project_id|session_id|issued_at</td></tr>
-              <tr><td class="px-3 py-2">logs /</td><td class="px-3 py-2">project_id|sdk-logs|issued_at</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 text-sky-300">sessions /</td><td class="px-3 py-2 text-emerald-300">project_id|exam_id|student_id|issued_at</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 text-sky-300">sessions /close/</td><td class="px-3 py-2 text-emerald-300">project_id|session_id|issued_at</td></tr>
+              <tr class="border-b border-g-800"><td class="px-3 py-2 text-sky-300">events /</td><td class="px-3 py-2 text-emerald-300">project_id|session_id|issued_at</td></tr>
+              <tr><td class="px-3 py-2 text-sky-300">logs /</td><td class="px-3 py-2 text-emerald-300">project_id|sdk-logs|issued_at</td></tr>
             </tbody>
           </table>
         </div>
@@ -369,7 +546,7 @@ import hashlib
 import hmac
 import time
 
-SECRET_KEY = "sk_live_..."          # clé secrète du projet (jamais exposée au navigateur)
+SECRET_KEY = "sk_live_..."          # clé secrète du projet (signature HMAC)
 PROJECT_ID = "3c8e1f2a-9b47-4d0e-8a11-2f6c9d4b7e01"
 
 def sign(canonical: str) -> str:
@@ -385,7 +562,7 @@ signature = sign(canonical)
       <div id="machine-session-create" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/sessions/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/machine/sessions/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Ouvrir une session d'examen" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -412,7 +589,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/sessions/ \
       <div id="machine-session-close" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/sessions/{id}/close/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/machine/sessions/{id}/close/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Clôturer une session" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -438,7 +615,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/sessions/6f1c0f2a-.../cl
       <div id="machine-events-post" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/events/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/machine/events/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Envoyer un lot d'événements" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -471,7 +648,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/events/ \
       <div id="machine-events-get" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/events/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/machine/events/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Lire les événements d'un projet" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -504,7 +681,7 @@ curl "https://api.examsdk.example/api/v1/machine/events/?session_id=6f1c0f2a-...
       <div id="machine-logs" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-400">POST</span>
-          <code class="font-mono text-sm text-g-text break-all">/api/v1/machine/logs/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/api/v1/machine/logs/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Envoyer le journal de fonctionnement du SDK" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -546,7 +723,7 @@ curl -X POST https://api.examsdk.example/api/v1/machine/logs/ \
       <div id="public-hosts" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/public/registered-hosts/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/public/registered-hosts/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Hôtes autorisés" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">
@@ -566,7 +743,7 @@ curl https://api.examsdk.example/public/registered-hosts/
       <div id="public-health" class="scroll-mt-20 border-t border-g-800 pt-8">
         <div class="flex flex-wrap items-center gap-3">
           <span class="rounded bg-g-blue/15 px-2 py-0.5 font-mono text-xs font-medium text-g-blue">GET</span>
-          <code class="font-mono text-sm text-g-text break-all">/public/health/</code>
+          <code class="font-mono text-sm text-sky-300 break-all">/public/health/</code>
         </div>
         <h3 class="mt-3 text-base font-medium text-g-text">{% translate "Sonde de disponibilité" %}</h3>
         <p class="mt-2 max-w-3xl text-sm text-g-muted">

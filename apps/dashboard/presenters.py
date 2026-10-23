@@ -137,17 +137,55 @@ def _idle(metadata):
 
 def _multiple_faces(metadata):
     count = _int(_raw(metadata, "count"))
-    return f"{count} visages détectés." if count is not None else "Plusieurs visages détectés."
+    if count is None:
+        return "Plusieurs personnes détectées."
+    plural = count > 1
+    return f"{count} personne{'s' if plural else ''} détectée{'s' if plural else ''}."
+
+
+# Traduction française des étiquettes COCO-SSD connues (02c §6.2) : la phrase de repli affiche
+# un nom parlant plutôt que « objet interdit ».
+_OBJECT_FR = {
+    "cell phone": "Téléphone",
+    "phone": "Téléphone",
+    "headphones": "Écouteurs",
+    "book": "Livre",
+    "laptop": "Ordinateur portable",
+    "remote": "Télécommande",
+    "tv": "Écran",
+    "keyboard": "Clavier",
+    "mouse": "Souris",
+}
+
+
+def _objects_detected(metadata):
+    objects = _raw(metadata, "objects")
+    if not isinstance(objects, list):
+        return "Objets détectés dans l'image."
+    parts = []
+    for item in objects:
+        if not isinstance(item, dict):
+            continue
+        label = item.get("label")
+        if not label:
+            continue
+        name = _OBJECT_FR.get(label, label)
+        conf = _conf(item.get("confidence"))
+        parts.append(f"{name} ({conf} %)" if conf is not None else name)
+    if not parts:
+        return "Objets détectés dans l'image."
+    return f"Objets détectés : {', '.join(parts)}."
 
 
 def _forbidden_object(metadata):
     label = _raw(metadata, "label")
     conf = _conf(_raw(metadata, "confidence"))
     if not label:
-        return "Objet interdit détecté."
+        return "Objet non identifié détecté."
+    name = _OBJECT_FR.get(label, label)
     if conf is None:
-        return f"Objet interdit détecté : {label}."
-    return f"Objet interdit détecté : {label} (confiance {conf} %)."
+        return f"{name} détecté."
+    return f"{name} détecté (confiance {conf} %)."
 
 
 def _gaze(metadata):
@@ -269,6 +307,7 @@ EVENT_PRESENTATION = {
     # --- Vision ---
     Event.Type.NO_FACE_DETECTED: ("Aucun visage", "vision", _fixed("Aucun visage détecté dans l'image.")),
     Event.Type.MULTIPLE_FACES: ("Plusieurs visages", "vision", _multiple_faces),
+    Event.Type.OBJECT_DETECTED: ("Objets détectés", "vision", _objects_detected),
     Event.Type.FORBIDDEN_OBJECT_DETECTED: ("Objet interdit", "vision", _forbidden_object),
     Event.Type.VIRTUAL_DEVICE_DETECTED: ("Périphérique virtuel", "vision", _fixed("Caméra ou micro virtuel détecté (indicatif, liste de noms connus).")),
     Event.Type.GAZE_AWAY_SUSTAINED: ("Regard détourné", "vision", _gaze),

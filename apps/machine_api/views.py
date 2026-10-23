@@ -245,13 +245,13 @@ class MachineEventsView(MachineBaseView):
         ],
     )
     def post(self, request):
-        session_id = request.data.get("session_id")
+        serializer = EventBatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        session_id = serializer.validated_data["session_id"]
         session = _event_belongs_to_project(request, session_id)
         if session is None:
             return Response({"detail": "Session introuvable."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = EventBatchSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
 
         accepted, duplicates = 0, 0
         # Chaque événement est créé dans sa propre transaction : un doublon (même event_id déjà

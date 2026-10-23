@@ -24,7 +24,7 @@ def test_presentation_covers_all_types():
     # Parité stricte entre le catalogue technique et la table d'affichage : si un type est
     # ajouté au modèle sans phrase, ce test échoue (contrat partagé, 05_AGENT_GUIDELINES.md §5).
     assert set(EVENT_PRESENTATION.keys()) == set(Event.Type.values)
-    assert len(EVENT_PRESENTATION) == 29
+    assert len(EVENT_PRESENTATION) == 30
 
 
 def test_present_event_french_formatting():
@@ -39,6 +39,24 @@ def test_present_event_french_formatting():
         sentence="Regard détourné pendant 3,4 s (angle horizontal 32°, vertical 5°).",
         critical=False,
     )
+
+
+def test_objects_detected_lists_every_object_without_verdict():
+    event = Event(
+        type=Event.Type.OBJECT_DETECTED,
+        metadata={
+            "count": 2,
+            "objects": [
+                {"label": "cell phone", "confidence": 0.91},
+                {"label": "headphones", "confidence": 0.72},
+            ],
+        },
+    )
+    presentation = present_event(event)
+    assert presentation.label == "Objets détectés"
+    assert "Téléphone (91 %)" in presentation.sentence
+    assert "Écouteurs (72 %)" in presentation.sentence
+    assert presentation.critical is False
 
 
 def test_present_event_is_defensive_on_bad_metadata():

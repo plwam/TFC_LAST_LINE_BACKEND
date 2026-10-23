@@ -45,6 +45,7 @@ class EventIngestSerializer(serializers.Serializer):
 class EventBatchSerializer(serializers.Serializer):
     """Lot d'événements envoyé par le SDK/extension (d'un seul envoi réseau)."""
 
+    session_id = serializers.UUIDField()
     events = EventIngestSerializer(many=True)
 
 

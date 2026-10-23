@@ -114,11 +114,17 @@ class DocsView(LoginRequiredMixin, TemplateView):
 
     Pourquoi une page maison plutôt que Redoc : Redoc/Swagger chargent leur moteur depuis un CDN
     tiers ; si ce CDN est bloqué, la page reste blanche. Cette page est rendue CÔTÉ SERVEUR (les
-    exemples de code sont colorés par Pygments, cf. `code_extras`). La documentation du SDK
-    (JavaScript) fera l'objet d'une étape ultérieure.
+    exemples de code sont colorés par Pygments, cf. `code_extras`). Elle documente aussi
+    l'intégration du SDK JavaScript (configuration, cycle de vie, événements, journal).
     """
 
     template_name = "dashboard/docs.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # URL du SDK injectée dans les extraits (jamais codée en dur, §8.6.4).
+        ctx["sdk_cdn_url"] = settings.SDK_CDN_URL
+        return ctx
 
     def dispatch(self, request, *args, **kwargs):
         # Un superutilisateur n'a pas forcément de profil Developer : on ne lui applique pas la

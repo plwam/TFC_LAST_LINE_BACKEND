@@ -214,6 +214,10 @@ def test_docs_page_developer_sees_only_integration_endpoints(client, developer):
     assert "/api/v1/machine/sessions/" in html
     assert "/api/v1/machine/events/" in html
     assert "/api/v1/machine/logs/" in html
+    # Intégration du SDK JavaScript : URL CDN injectée par la vue et API publique réelle.
+    assert settings.SDK_CDN_URL in html
+    assert "ExamSurveillanceSDK" in html
+    assert "https://api.examsdk.example/api/v1/machine" in html
     # Les surfaces de gestion (API JWT) et d'exploitation (API publique, réservée à
     # l'extension du propriétaire) sont MASQUÉES pour un simple développeur.
     assert "/api/v1/auth/token/" not in html

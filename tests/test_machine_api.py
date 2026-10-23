@@ -155,6 +155,24 @@ def test_events_for_foreign_session_is_404(project, other_project, machine_heade
     assert response.status_code == 404
 
 
+def test_events_with_malformed_session_id_is_400(project, machine_headers, now_epoch):
+    """Un identifiant non UUID est une erreur de données (400), jamais un 500 serveur."""
+    message = f"{project.id}|test-session|{now_epoch}"
+    response = APIClient().post(
+        EVENTS_URL,
+        {
+            "session_id": "test-session",
+            "issued_at": now_epoch,
+            "events": [
+                {"event_id": "a", "type": Event.Type.FOCUS_LOST, "occurred_at": timezone.now().isoformat()}
+            ],
+        },
+        format="json",
+        **machine_headers(message),
+    )
+    assert response.status_code == 400
+
+
 def test_events_list_is_scoped_and_filtered(project, session, other_project, make_event,
                                             machine_headers, now_epoch):
     from django.utils import timezone as tz
