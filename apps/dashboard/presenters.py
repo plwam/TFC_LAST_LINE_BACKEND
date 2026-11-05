@@ -255,6 +255,11 @@ def _suspicious_env(metadata):
 
 
 def _warning_issued(metadata):
+    # Le message exact envoyé au candidat (voix + bandeau) est transmis dans
+    # `messageText` : le dashboard affiche le même texte que l'étudiant a reçu.
+    message = _raw(metadata, "messageText")
+    if isinstance(message, str) and message.strip():
+        return message.strip()
     severity = _raw(metadata, "severity")
     source = _raw(metadata, "sourceEvent")
     count = _int(_raw(metadata, "occurrenceCount"))

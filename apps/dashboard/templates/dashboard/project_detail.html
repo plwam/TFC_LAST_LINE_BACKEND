@@ -7,9 +7,9 @@
 {% block title %}{{ project.name }}{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
-  <span class="mx-1">›</span>
-  <span class="font-medium text-g-text">{{ project.name }}</span>
+  <a href="{% url 'dashboard:project-list' %}" class="shrink-0 hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <span class="min-w-0 truncate font-medium text-g-text">{{ project.name }}</span>
 {% endblock %}
 
 {% block page_header %}

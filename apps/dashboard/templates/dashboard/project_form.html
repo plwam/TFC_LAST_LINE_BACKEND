@@ -5,9 +5,9 @@
 {% block title %}{% if project %}{% translate "Modifier le projet" %}{% else %}{% translate "Nouveau projet" %}{% endif %}{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
-  <span class="mx-1">›</span>
-  <span class="font-medium text-g-text">{% if project %}{{ project.name }}{% else %}{% translate "Nouveau" %}{% endif %}</span>
+  <a href="{% url 'dashboard:project-list' %}" class="shrink-0 hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <span class="min-w-0 truncate font-medium text-g-text">{% if project %}{{ project.name }}{% else %}{% translate "Nouveau" %}{% endif %}</span>
 {% endblock %}
 
 {% block page_header %}

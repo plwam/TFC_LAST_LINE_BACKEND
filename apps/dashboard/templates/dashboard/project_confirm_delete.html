@@ -7,11 +7,11 @@
 {% block title %}{% translate "Supprimer le projet" %}{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
-  <span class="mx-1">›</span>
-  <a href="{% url 'dashboard:project-detail' project.id %}" class="hover:text-g-text">{{ project.name }}</a>
-  <span class="mx-1">›</span>
-  <span class="font-medium text-g-text">{% translate "Supprimer" %}</span>
+  <a href="{% url 'dashboard:project-list' %}" class="shrink-0 hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <a href="{% url 'dashboard:project-detail' project.id %}" class="min-w-0 max-w-[8rem] truncate hover:text-g-text sm:max-w-[14rem]">{{ project.name }}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <span class="shrink-0 font-medium text-g-text">{% translate "Supprimer" %}</span>
 {% endblock %}
 
 {% block page_header %}

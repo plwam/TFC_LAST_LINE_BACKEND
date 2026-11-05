@@ -6,11 +6,11 @@
 {% block title %}{% blocktranslate with exam=session.exam_id %}Session {{ exam }}{% endblocktranslate %}{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{% url 'dashboard:project-list' %}" class="hover:text-g-text">{% translate "Projets" %}</a>
-  <span class="mx-1">›</span>
-  <a href="{{ project_url }}" class="hover:text-g-text">{{ project.name }}</a>
-  <span class="mx-1">›</span>
-  <span class="font-medium text-g-text">{{ session.exam_id }} › {{ session.student_id }}</span>
+  <a href="{% url 'dashboard:project-list' %}" class="shrink-0 hover:text-g-text">{% translate "Projets" %}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <a href="{{ project_url }}" class="min-w-0 max-w-[8rem] truncate hover:text-g-text sm:max-w-[14rem]">{{ project.name }}</a>
+  <span class="mx-1 shrink-0">›</span>
+  <span class="min-w-0 truncate font-medium text-g-text">{{ session.exam_id }} › {{ session.student_id }}</span>
 {% endblock %}
 
 {% block page_header %}
