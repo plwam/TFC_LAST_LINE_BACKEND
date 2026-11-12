@@ -215,3 +215,87 @@ def test_close_session(project, session, machine_headers, now_epoch):
     session.refresh_from_db()
     assert session.status == ExamSession.Status.CLOSED
     assert session.ended_at is not None
+
+
+# --- Consultation PAR EXAMEN (vue enseignant : une session = un étudiant) ------------------ #
+
+EXAM_SESSIONS_URL = "/api/v1/machine/exam-sessions/"
+
+
+def test_exam_sessions_sorted_by_risk(project, other_project, machine_headers, now_epoch):
+    from apps.events.models import Event as EventModel
+
+    low = ExamSession.objects.create(
+        project=project, exam_id="EXAM-9", student_id="STU-A",
+        started_at=timezone.now(), risk_score=0.118,
+    )
+    high = ExamSession.objects.create(
+        project=project, exam_id="EXAM-9", student_id="STU-B",
+        started_at=timezone.now(), risk_score=0.632,
+    )
+    none_score = ExamSession.objects.create(
+        project=project, exam_id="EXAM-9", student_id="STU-C",
+        started_at=timezone.now(), risk_score=None,
+    )
+    foreign = ExamSession.objects.create(
+        project=other_project, exam_id="EXAM-9", student_id="STU-X",
+        started_at=timezone.now(), risk_score=0.999,
+    )
+    EventModel.objects.create(session=high, event_id="e1", type=EventModel.Type.FOCUS_LOST,
+                              occurred_at=timezone.now())
+
+    # Canonique de consultation par examen : `project_id|exam_id|issued_at`.
+    message = f"{project.id}|EXAM-9|{now_epoch}"
+    response = APIClient().get(
+        EXAM_SESSIONS_URL,
+        {"exam_id": "EXAM-9", "issued_at": now_epoch},
+        **machine_headers(message),
+    )
+    assert response.status_code == 200
+    body = response.data
+    students = [s["student_id"] for s in body["sessions"]]
+    # Scoping projet : la session de l'autre projet est invisible ; tri risque décroissant,
+    # score absent en fin de liste.
+    assert students == ["STU-B", "STU-A", "STU-C"]
+    assert body["count"] == 3
+    assert body["sessions"][0]["events_count"] == 1
+    assert body["sessions"][0]["risk_score"] == pytest.approx(0.632)
+    assert str(high.id) == body["sessions"][0]["session_id"]
+    assert none_score.risk_score is None  # gardé tel quel dans la réponse
+
+
+def test_exam_sessions_sort_recent(project, machine_headers, now_epoch):
+    old = ExamSession.objects.create(
+        project=project, exam_id="EXAM-8", student_id="STU-OLD",
+        started_at=timezone.now() - timezone.timedelta(hours=2),
+    )
+    new = ExamSession.objects.create(
+        project=project, exam_id="EXAM-8", student_id="STU-NEW", started_at=timezone.now()
+    )
+    message = f"{project.id}|EXAM-8|{now_epoch}"
+    response = APIClient().get(
+        EXAM_SESSIONS_URL,
+        {"exam_id": "EXAM-8", "issued_at": now_epoch, "sort": "recent"},
+        **machine_headers(message),
+    )
+    assert response.status_code == 200
+    assert [s["student_id"] for s in response.data["sessions"]] == ["STU-NEW", "STU-OLD"]
+    assert old.status == ExamSession.Status.ACTIVE  # invariant de lecture
+
+
+def test_exam_sessions_requires_exam_id(project, machine_headers, now_epoch):
+    message = f"{project.id}|{now_epoch}"  # sans exam_id la canonique n'est même pas définissable
+    response = APIClient().get(EXAM_SESSIONS_URL, {"issued_at": now_epoch}, **machine_headers(message))
+    assert response.status_code == 401  # requête non signable avant même la validation métier
+
+
+def test_exam_sessions_wrong_exam_canonical_is_401(project, machine_headers, now_epoch):
+    """Signer pour un examen et lire un autre : signature invalide (401)."""
+    ExamSession.objects.create(project=project, exam_id="EXAM-7", student_id="S", started_at=timezone.now())
+    message = f"{project.id}|EXAM-AUTRE|{now_epoch}"
+    response = APIClient().get(
+        EXAM_SESSIONS_URL,
+        {"exam_id": "EXAM-7", "issued_at": now_epoch},
+        **machine_headers(message),
+    )
+    assert response.status_code == 401

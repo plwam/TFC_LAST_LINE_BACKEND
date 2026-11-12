@@ -17,6 +17,7 @@ l'intégrateur LMS sont des consommateurs tiers, la documentation fait partie du
 """
 
 from django.db import IntegrityError, transaction
+from django.db.models import Count, F
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
@@ -327,6 +328,95 @@ class MachineEventsView(MachineBaseView):
             events = events.filter(type=event_type)
         events = events.order_by("-occurred_at")[:500]
         return Response(EventReadSerializer(events, many=True).data)
+
+
+class MachineSessionsView(MachineBaseView):
+    """Liste LES SESSIONS D'UN EXAMEN (vue enseignant / tableau de bord).
+
+    Chaque session représente un étudiant : le développeur (ou le professeur) consulte ici
+    l'ensemble des passations d'un examen, triées par taux de risque décroissant par défaut
+    (les cas préoccupants en tête). Complète la consultation d'événements : celle-ci lit les
+    événements d'UNE session, celle-ci donne la vue d'ensemble de l'examen.
+
+    Signature : chaîne canonique `project_id|exam_id|issued_at` — le scoping projet reste
+    garanti par la clé publique : les sessions d'un autre projet sont invisibles.
+    """
+
+    @extend_schema(
+        tags=[MACHINE_TAG],
+        summary="Lister les sessions d'un examen (une ligne par étudiant)",
+        description=(
+            "Renvoie toutes les sessions du projet signé portant cet `exam_id`, chacune avec "
+            "son étudiant, son état, son score de risque et son nombre d'événements. "
+            "Tri par défaut : **taux de risque décroissant** (les cas à surveiller en tête) ; "
+            "`sort=recent` trie par date de démarrage. Canonique HMAC : "
+            "`project_id|exam_id|issued_at`."
+        ),
+        parameters=[
+            OpenApiParameter("exam_id", OpenApiTypes.STR, OpenApiParameter.QUERY, required=True,
+                             description="Identifiant de l'examen."),
+            OpenApiParameter("sort", OpenApiTypes.STR, OpenApiParameter.QUERY,
+                             description="`risk` (défaut, risque décroissant) ou `recent`."),
+        ],
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                "Deux sessions triées par risque",
+                value={
+                    "exam_id": "EXAM-1",
+                    "count": 2,
+                    "sort": "risk",
+                    "sessions": [
+                        {
+                            "session_id": "9c2f…",
+                            "student_id": "STU-42",
+                            "status": "active",
+                            "started_at": "2024-10-15T12:00:00Z",
+                            "risk_score": 0.632,
+                            "events_count": 31,
+                        },
+                        {
+                            "session_id": "a41b…",
+                            "student_id": "STU-7",
+                            "status": "closed",
+                            "started_at": "2024-10-15T10:00:00Z",
+                            "risk_score": 0.118,
+                            "events_count": 4,
+                        },
+                    ],
+                },
+                response_only=True,
+            ),
+        ],
+    )
+    def get(self, request):
+        exam_id = request.query_params.get("exam_id")
+        if not exam_id:
+            return Response({"detail": "Paramètre `exam_id` requis."}, status=status.HTTP_400_BAD_REQUEST)
+        sort = request.query_params.get("sort", "risk")
+        sessions = (
+            ExamSession.objects.filter(project=self.project, exam_id=exam_id)
+            .annotate(events_count=Count("events"))
+        )
+        if sort == "recent":
+            sessions = sessions.order_by("-started_at")
+        else:
+            # Risque décroissant, scores absents (tâche async non passée) en fin de liste.
+            sessions = sessions.order_by(F("risk_score").desc(nulls_last=True), "-started_at")
+        payload = [
+            {
+                "session_id": str(s.id),
+                "exam_id": s.exam_id,
+                "student_id": s.student_id,
+                "status": s.status,
+                "started_at": s.started_at,
+                "ended_at": s.ended_at,
+                "risk_score": s.risk_score,
+                "events_count": s.events_count,
+            }
+            for s in sessions
+        ]
+        return Response({"exam_id": exam_id, "sort": sort, "count": len(payload), "sessions": payload})
 
 
 class MachineLogsView(MachineBaseView):

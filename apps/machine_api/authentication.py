@@ -133,6 +133,11 @@ class HMACAuthentication(BaseAuthentication):
             return build_session_canonical_string(
                 str(project.id), str(data["exam_id"]), str(data["student_id"]), int(data["issued_at"])
             )
+        if data.get("exam_id") is not None:
+            # Consultation PAR EXAMEN (toutes les sessions d'un examen, vue enseignant) :
+            # canonique `project_id|exam_id|issued_at`. Chaque session représentant un étudiant,
+            # cette signature autorise la lecture agrégée sans connaître les étudiants d'avance.
+            return f"{project.id}|{data['exam_id']}|{data['issued_at']}"
         return None
 
     @staticmethod

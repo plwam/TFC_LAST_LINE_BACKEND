@@ -9,6 +9,7 @@ app_name = "machine_api"
 urlpatterns = [
     path("sessions/", views.MachineSessionCreateView.as_view(), name="session-create"),
     path("sessions/<uuid:pk>/close/", views.MachineSessionCloseView.as_view(), name="session-close"),
+    path("exam-sessions/", views.MachineSessionsView.as_view(), name="exam-sessions"),
     path("events/", views.MachineEventsView.as_view(), name="events"),
     path("logs/", views.MachineLogsView.as_view(), name="logs"),
 ]

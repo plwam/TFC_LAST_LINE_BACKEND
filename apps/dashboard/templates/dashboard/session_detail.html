@@ -8,8 +8,19 @@
 {% block breadcrumb %}
   <a href="{% url 'dashboard:project-list' %}" class="shrink-0 hover:text-g-text">{% translate "Projets" %}</a>
   <span class="mx-1 shrink-0">›</span>
-  <a href="{{ project_url }}" class="min-w-0 max-w-[8rem] truncate hover:text-g-text sm:max-w-[14rem]">{{ project.name }}</a>
-  <span class="mx-1 shrink-0">›</span>
+  {# Mobile : maillons intermédiaires repliés dans un « … » déroulant (CSS pur, sans JS). #}
+  <details class="relative shrink-0 sm:hidden">
+    <summary class="-my-0.5 cursor-pointer select-none rounded px-1.5 text-g-muted hover:bg-g-800 hover:text-g-text list-none [&::-webkit-details-marker]:hidden"
+             aria-label="{% translate 'Afficher le chemin complet' %}">…</summary>
+    <div class="absolute left-0 top-full z-50 mt-1 w-52 rounded-lg border border-g-700 bg-g-900 py-1 shadow-lg">
+      <a href="{{ project_url }}" class="block px-3 py-2 text-sm text-g-text hover:bg-g-800">{{ project.name }}</a>
+    </div>
+  </details>
+  <span class="mx-1 shrink-0 sm:hidden">›</span>
+  {# ≥sm : chemin complet aligné. #}
+  <span class="mx-1 hidden sm:inline">›</span>
+  <a href="{{ project_url }}" class="hidden min-w-0 max-w-[14rem] truncate hover:text-g-text sm:inline">{{ project.name }}</a>
+  <span class="mx-1 hidden sm:inline">›</span>
   <span class="min-w-0 truncate font-medium text-g-text">{{ session.exam_id }} › {{ session.student_id }}</span>
 {% endblock %}
 
