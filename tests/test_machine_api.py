@@ -11,6 +11,7 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.core.hmac import derive_session_key, sign_message
 from apps.events.models import Event
 from apps.sessions.models import ExamSession
 
@@ -297,5 +298,105 @@ def test_exam_sessions_wrong_exam_canonical_is_401(project, machine_headers, now
         EXAM_SESSIONS_URL,
         {"exam_id": "EXAM-7", "issued_at": now_epoch},
         **machine_headers(message),
+    )
+    assert response.status_code == 401
+
+
+# --- Clés de chambre (clé de session dérivée) --------------------------------------------- #
+
+def test_session_create_returns_derived_session_key(project, machine_headers, now_epoch):
+    """L'initiation livre la clé de chambre : HMAC-SHA256(maîtresse, "session-key|<id>")."""
+    message = f"{project.id}|EXAM-K1|STU-K1|{now_epoch}"
+    response = APIClient().post(
+        CREATE_URL,
+        {"exam_id": "EXAM-K1", "student_id": "STU-K1", "issued_at": now_epoch},
+        format="json",
+        **machine_headers(message),
+    )
+    assert response.status_code == 201
+    expected = derive_session_key(str(project.secret_key), response.data["session_id"])
+    assert response.data["session_key"] == expected
+
+    # Dérivation déterministe : ré-ouvrir la MÊME session (idempotence) livre la même clé.
+    second = APIClient().post(
+        CREATE_URL,
+        {"exam_id": "EXAM-K1", "student_id": "STU-K1", "issued_at": now_epoch},
+        format="json",
+        **machine_headers(message),
+    )
+    assert second.status_code == 200
+    assert second.data["session_key"] == expected
+
+
+def test_events_signed_with_room_key(project, session, machine_headers, now_epoch):
+    """Signature par la clé de chambre uniquement (sans clé maîtresse) → lot accepté."""
+    room_key = derive_session_key(str(project.secret_key), str(session.id))
+    message = f"{project.id}|{session.id}|{now_epoch}"
+    response = APIClient().post(
+        EVENTS_URL,
+        {
+            "session_id": str(session.id),
+            "issued_at": now_epoch,
+            "events": [
+                {"event_id": "rk2", "type": Event.Type.FOCUS_LOST, "occurred_at": timezone.now().isoformat()}
+            ],
+        },
+        format="json",
+        # Le SDK signe le MESSAGE avec la clé de chambre (pas la clé elle-même en en-tête).
+        **machine_headers(message, signature=sign_message(room_key, message)),
+    )
+    assert response.status_code == 202
+    assert response.data == {"accepted": 1, "duplicates": 0}
+
+
+def test_close_signed_with_room_key(project, session, machine_headers, now_epoch):
+    """La clôture aussi se signe avec la clé de chambre — dernier souffle de la clé."""
+    room_key = derive_session_key(str(project.secret_key), str(session.id))
+    message = f"{project.id}|{session.id}|{now_epoch}"
+    response = APIClient().post(
+        _close_url(session),
+        {"invalid": False, "issued_at": now_epoch, "session_id": str(session.id)},
+        format="json",
+        **machine_headers(message, signature=sign_message(room_key, message)),
+    )
+    assert response.status_code == 200
+    session.refresh_from_db()
+    assert session.status == ExamSession.Status.CLOSED
+
+
+def test_foreign_room_key_is_401(project, session, other_project, machine_headers, now_epoch):
+    """La clé de chambre d'un AUTRE projet ne valide rien : 401."""
+    foreign_key = derive_session_key(str(other_project.secret_key), str(session.id))
+    message = f"{project.id}|{session.id}|{now_epoch}"
+    response = APIClient().post(
+        EVENTS_URL,
+        {
+            "session_id": str(session.id),
+            "issued_at": now_epoch,
+            "events": [
+                {"event_id": "rk3", "type": Event.Type.FOCUS_LOST, "occurred_at": timezone.now().isoformat()}
+            ],
+        },
+        format="json",
+        **machine_headers(message, signature=sign_message(foreign_key, message)),
+    )
+    assert response.status_code == 401
+
+
+def test_room_key_of_another_session_is_401(project, session, machine_headers, now_epoch):
+    """Clé dérivée pour un autre session_id (tentative de greffe) : la signature ne correspond pas."""
+    other_room_key = derive_session_key(str(project.secret_key), "not-this-session")
+    message = f"{project.id}|{session.id}|{now_epoch}"
+    response = APIClient().post(
+        EVENTS_URL,
+        {
+            "session_id": str(session.id),
+            "issued_at": now_epoch,
+            "events": [
+                {"event_id": "rk4", "type": Event.Type.FOCUS_LOST, "occurred_at": timezone.now().isoformat()}
+            ],
+        },
+        format="json",
+        **machine_headers(message, signature=sign_message(other_room_key, message)),
     )
     assert response.status_code == 401

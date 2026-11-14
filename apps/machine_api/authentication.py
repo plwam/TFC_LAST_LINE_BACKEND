@@ -26,7 +26,12 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import BasePermission
 
-from apps.core.hmac import build_session_canonical_string, is_timestamp_fresh, verify_signature
+from apps.core.hmac import (
+    build_session_canonical_string,
+    derive_session_key,
+    is_timestamp_fresh,
+    verify_signature,
+)
 from apps.projects.models import Project
 
 
@@ -99,7 +104,7 @@ class HMACAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Champs requis manquants pour reconstruire la signature.")
 
         # Comparaison en TEMPS CONSTANT (hmac.compare_digest) : voir apps/core/hmac.py.
-        if not verify_signature(str(project.secret_key), message, signature):
+        if not self._signature_valid(project, data, message, signature):
             raise AuthenticationFailed("Signature invalide.")
 
         try:
@@ -112,6 +117,30 @@ class HMACAuthentication(BaseAuthentication):
         self._enforce_rate_limit(project)
         # `request.user` reste None (pas d'utilisateur humain) ; `request.auth` porte le projet.
         return (None, AuthenticatedProject(project))
+
+    @staticmethod
+    def _signature_valid(project: Project, data: dict, message: str, signature: str) -> bool:
+        """Vérifie la signature contre la clé maîtresse PUIS la clé de session dérivée.
+
+        Clés à deux niveaux : après l'initiation, le SDK signe les événements et la clôture
+        avec la clé de chambre (`derive_session_key`, voir `apps/core/hmac.py`) — la clé
+        maîtresse ne sert plus qu'aux canoniques d'initiation et de consultation par examen.
+        La dérivation est déterministe : aucune lecture en base, aucun cycle d'import.
+
+        Compatibilité ascendante : une signature maîtresse reste acceptée partout (SDK et
+        scripts existants), mais une session qui refuse sa clé dérivée est un signal d'attaque
+        (tentative de changement de session) traité comme une signature invalide.
+        """
+        if verify_signature(str(project.secret_key), message, signature):
+            return True
+        session_id = data.get("session_id")
+        if session_id:
+            return verify_signature(
+                derive_session_key(str(project.secret_key), str(session_id)),
+                message,
+                signature,
+            )
+        return False
 
     @staticmethod
     def _canonical_string(request, project: Project, data: dict):

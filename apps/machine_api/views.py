@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.events.models import Event
+from apps.core.hmac import derive_session_key
 from apps.sdklogs.models import SdkLog
 from apps.sessions.models import ExamSession
 from apps.sessions.tasks import compute_risk_score_task
@@ -130,6 +131,7 @@ class MachineSessionCreateView(MachineBaseView):
         return Response(
             {
                 "session_id": str(session.id),
+                "session_key": derive_session_key(str(self.project.secret_key), str(session.id)),
                 "status": session.status,
                 "started_at": session.started_at,
             },

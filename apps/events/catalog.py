@@ -71,6 +71,9 @@ CRITICAL_TYPES = frozenset(
         _T.AUDIO_KEYWORD_MATCH,
         _T.MULTIPLE_VOICES,
         _T.PAGE_EXIT,
+        # Ouverture des DevTools : risque maximal de falsification locale — cohérent avec le
+        # SDK (`SDK/src/events/EventClassifier.ts`), qui l'envoie en priorité critique immédiate.
+        _T.DEVTOOLS_OPEN,
     }
 )
 

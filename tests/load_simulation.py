@@ -19,6 +19,14 @@ Usage (les clés sont celles du projet de démonstration, détenues par le serve
   python tests/load_simulation.py --students 10 --duration 45 \
       --project-id <uuid> --public-key pk_live_... --secret-key sk_live_...
 
+Deux familles de paliers :
+
+  * rythme du SDK (défaut)   : chaque étudiant suit le cadencement réel (lot/7 s, signal de
+    vie/45 s, critique immédiat) pendant `--duration` secondes ; mesure le débit en req/s ;
+  * volume (`--volume-events`) : chaque étudiant déverse N événements dans SA session par lots
+    de `--volume-batch`, le plus vite possible ; mesure le débit d'ingestion en événements/s
+    et la latence par requête (10, 20, 100, 1 000 événements par session).
+
 Le script ne s'exécute PAS sous pytest (pas de préfixe test_) : une épreuve de charge n'a
 rien à faire dans la suite d'intégration continue, elle se lance à la main.
 """
@@ -80,6 +88,7 @@ class Metrics:
     def __init__(self) -> None:
         self.lock = threading.Lock()
         self.ok = 0
+        self.events_ok = 0
         self.errors: list[str] = []
         self.latencies: list[float] = []
 
@@ -92,6 +101,10 @@ class Metrics:
                 self.latencies.append(latency_ms)
             else:
                 self.errors.append(f"HTTP {status}")
+
+    def add_events(self, count: int) -> None:
+        with self.lock:
+            self.events_ok += count
 
     def summary(self, elapsed_s: float, students: int) -> str:
         lat = sorted(self.latencies)
@@ -117,6 +130,28 @@ class Metrics:
             lines.append("  exemples d'erreurs   : " + "; ".join(self.errors[:3]))
         return "\n".join(lines)
 
+    def summary_volume(self, elapsed_s: float, students: int, per_student: int, batch: int) -> str:
+        lat = sorted(self.latencies)
+        n = len(lat)
+
+        def pct(p: float) -> float:
+            return lat[min(int(p * n), n - 1)] if n else float("nan")
+
+        eps = self.events_ok / elapsed_s if elapsed_s > 0 else 0.0
+        lines = [
+            f"  événements ingérés   : {self.events_ok} (cible {students * per_student})",
+            f"  durée                : {elapsed_s:.1f} s",
+            f"  débit d'ingestion    : {eps:.0f} événements/s",
+            f"  requêtes OK          : {self.ok} (lots de {batch} événement(s))",
+            f"  latence médiane      : {pct(0.50):.0f} ms" if n else "  latence médiane      : n/a",
+            f"  latence p95          : {pct(0.95):.0f} ms" if n else "  latence p95          : n/a",
+            f"  latence max          : {max(lat):.0f} ms" if n else "  latence max          : n/a",
+            f"  erreurs              : {len(self.errors)}",
+        ]
+        if self.errors:
+            lines.append("  exemples d'erreurs   : " + "; ".join(self.errors[:3]))
+        return "\n".join(lines)
+
 
 class StudentSim:
     """Un étudiant simulé : sa connexion persistante, son rythme, ses requêtes signées."""
@@ -127,6 +162,7 @@ class StudentSim:
         self.metrics = metrics
         self.conn: http.client.HTTPConnection | None = None
         self.session_id: str | None = None
+        self.last_status = 0
         self.stop_at = 0.0
 
     # --- transport ----------------------------------------------------------------------- #
@@ -162,6 +198,7 @@ class StudentSim:
             except Exception:
                 pass
             self.conn = None
+        self.last_status = status
         latency_ms = (time.perf_counter() - start) * 1000.0
         self.metrics.record(status, latency_ms, err)
         return data
@@ -285,6 +322,74 @@ def run_scenario(students: int, duration: float, cfg: Config) -> None:
     print(metrics.summary(elapsed, students), flush=True)
 
 
+def run_volume_scenario(
+    students: int, events_per_student: int, batch_size: int, cfg: Config
+) -> None:
+    """Un étudiant déverse `events_per_student` événements dans SA session, par lots de
+    `batch_size`. Mesure le débit d'INGESTION (événements/s) et la latence par requête,
+    indépendamment du rythme temporel du SDK (qui borne lui la cadence à 1 lot / 7 s).
+    """
+    print(
+        f"\n=== Volume : {students} étudiants × {events_per_student} événements/session, "
+        f"lots de {batch_size} ===",
+        flush=True,
+    )
+    metrics = Metrics()
+
+    def work(index: int) -> None:
+        sim = StudentSim(index, cfg, metrics)
+        issued_at = int(time.time())
+        message = f"{cfg.project_id}|{cfg.exam_id}|{sim.student_id}|{issued_at}"
+        data = sim._post(
+            "/api/v1/machine/sessions/",
+            {"exam_id": cfg.exam_id, "student_id": sim.student_id, "issued_at": issued_at},
+            canonical_sign(cfg.secret_key, message),
+            read_body=True,
+        )
+        sim.session_id = data.get("session_id")
+        remaining = events_per_student
+        while remaining > 0 and sim.session_id:
+            count = min(batch_size, remaining)
+            remaining -= count
+            events = [
+                {
+                    "event_id": str(uuid.uuid4()),
+                    "type": INFORMATIVE_TYPES[i % len(INFORMATIVE_TYPES)],
+                    "occurred_at": iso_now(),
+                    "confidence_score": 0.9,
+                    "metadata": {"simulated": True},
+                }
+                for i in range(count)
+            ]
+            issued_at = int(time.time())
+            message = f"{cfg.project_id}|{sim.session_id}|{issued_at}"
+            sim._post(
+                "/api/v1/machine/events/",
+                {"session_id": sim.session_id, "issued_at": issued_at, "events": events},
+                canonical_sign(cfg.secret_key, message),
+            )
+            if 200 <= sim.last_status < 300:
+                metrics.add_events(count)
+        if sim.session_id:
+            issued_at = int(time.time())
+            message = f"{cfg.project_id}|{sim.session_id}|{issued_at}"
+            sim._post(
+                f"/api/v1/machine/sessions/{sim.session_id}/close/",
+                {"invalid": False, "issued_at": issued_at, "session_id": sim.session_id},
+                canonical_sign(cfg.secret_key, message),
+            )
+        sim._disconnect()
+
+    threads = [threading.Thread(target=work, args=(i,), daemon=True) for i in range(students)]
+    t0 = time.monotonic()
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=600)
+    elapsed = time.monotonic() - t0
+    print(metrics.summary_volume(elapsed, students, events_per_student, batch_size), flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Simulation de charge du backend ExamSDK.")
     parser.add_argument("--students", type=int, default=10, help="étudiants simultanés")
@@ -294,8 +399,24 @@ def main() -> None:
     parser.add_argument("--public-key", required=True)
     parser.add_argument("--secret-key", required=True)
     parser.add_argument("--exam-id", default=EXAM_ID)
+    parser.add_argument(
+        "--volume-events",
+        type=int,
+        default=0,
+        help="mode volume : N événements par session (0 = mode rythme du SDK)",
+    )
+    parser.add_argument(
+        "--volume-batch",
+        type=int,
+        default=1,
+        help="mode volume : taille des lots d'événements par requête",
+    )
     args = parser.parse_args()
-    run_scenario(args.students, args.duration, Config(args))
+    cfg = Config(args)
+    if args.volume_events > 0:
+        run_volume_scenario(args.students, args.volume_events, args.volume_batch, cfg)
+    else:
+        run_scenario(args.students, args.duration, cfg)
 
 
 if __name__ == "__main__":

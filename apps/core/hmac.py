@@ -3,6 +3,11 @@ Primitives cryptographiques HMAC — API machine (SDK / LMS), 01_BACKEND.md §9,
 
 Modèle Zero Trust : aucune notion d'utilisateur connecté. Le serveur du développeur signe
 un jeton de session avec sa `secret_key` ; ExamSDK revérifie la signature en temps constant.
+
+Clés à deux niveaux : la clé maîtresse (`project.secret_key`) ne quitte JAMAIS le contexte
+serveur après l'initiation — le SDK signe les événements avec une clé de session dérivée
+(`derive_session_key`), scellée sur le `session_id` et morte à la clôture. La dérivation est
+déterministe : RIEN à stocker, le backend recalcule la même clé à chaque vérification.
 """
 
 import hashlib
@@ -52,3 +57,27 @@ def is_timestamp_fresh(issued_at: int, window_seconds: int) -> bool:
     """
     now = int(time.time())
     return abs(now - int(issued_at)) <= window_seconds
+
+
+SESSION_KEY_LABEL = "session-key"
+
+
+def derive_session_key(master_secret: str, session_id: str) -> str:
+    """Dérive la clé de session (« clé de chambre ») d'une session : HMAC-SHA256 hexadécimal.
+
+    Format figé : `HMAC-SHA256(master_secret, "session-key|<session_id>")`. Le libellé
+    (`SESSION_KEY_LABEL`) sépare les domaines : la même clé maîtresse sert à signer des
+    messages ET à dériver des clés, le libellé garantit qu'aucune sortie d'un domaine ne
+    peut être réutilisée dans l'autre.
+
+    Propriétés voulues :
+      - déterministe → le backend RECALCULE la clé à chaque vérification : rien à stocker,
+        aucune table de clés à purger, aucun secret de plus dans la base ;
+      - scellée sur la session → la clé d'une session ne valide pas une autre ;
+      - éphémère de fait → la clé ne sert qu'aux requêtes d'une session vivante ; à la
+        clôture, la session n'est plus éligible et la clé n'a plus aucun pouvoir.
+
+    La clé maîtresse n'est donc plus nécessaire au SDK après l'initiation : les événements
+    et la clôture sont signés avec cette clé dérivée, qui ne peut ouvrir qu'une chambre.
+    """
+    return sign_message(master_secret, f"{SESSION_KEY_LABEL}|{session_id}")
